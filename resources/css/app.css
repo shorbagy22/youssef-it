@@ -1,0 +1,16 @@
+@import "bootstrap/dist/css/bootstrap.min.css";
+
+/* Alpine.js: hide elements using x-cloak until Alpine has initialized,
+   preventing a flash of unstyled/incorrectly-shown content on load. */
+[x-cloak] {
+    display: none !important;
+}
+
+/* Dropdown visibility here is controlled by Alpine's x-show (see
+   components/dropdown.blade.php), not Bootstrap's native dropdown JS -
+   so Bootstrap's own ".dropdown-menu { display: none }" default (which
+   only Bootstrap's JS clears by adding ".show") is neutralized, letting
+   Alpine's inline style toggle be the only thing controlling display. */
+.dropdown-menu {
+    display: block;
+}

@@ -1,0 +1,4 @@
+Custom, meaningfully-named exceptions (e.g. SharePointUnavailableException,
+OllamaUnavailableException) so calling code can catch specific failure
+modes instead of generic \Exception. Populated starting with the
+SharePoint/Ollama integration milestone.

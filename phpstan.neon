@@ -1,0 +1,15 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    # Pre-existing, reviewed findings only - see the comment at the top of
+    # phpstan-baseline.neon for what's in here and why. New code is held
+    # to the full level: 8 standard below with no baseline entries added.
+    - phpstan-baseline.neon
+
+parameters:
+    paths:
+        - app
+
+    # Level 8 (max) - strict, per the project's "strict typing everywhere"
+    # requirement. Larastan adds Laravel-aware rules (Eloquent, facades,
+    # container resolution) on top of PHPStan's own strictness levels.
+    level: 8

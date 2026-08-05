@@ -1,0 +1,4 @@
+Concrete implementations of Contracts that wrap external system
+integration (e.g. SharePointConnector talking to Microsoft Graph,
+OllamaClient talking to the local Ollama API). Populated starting with
+the SharePoint/Ollama integration milestone.
