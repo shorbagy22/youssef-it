@@ -8,6 +8,7 @@ use App\Contracts\ExcelFileProvider;
 use App\DTOs\SyncResult;
 use App\Exceptions\SharePointException;
 use App\Repositories\SyncedDocumentRepository;
+use App\ValueObjects\ConnectionStatus;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -34,6 +35,12 @@ final class SyncSharePointExcelFilesAction
 
     public function handle(): SyncResult
     {
+        // Nothing to do yet, and no credentials to even attempt a call
+        // with - exit cleanly rather than letting downstream calls fail.
+        if ($this->excelFiles->healthCheck() === ConnectionStatus::NotConfigured) {
+            return new SyncResult(checked: 0, synced: 0, skipped: 0, failed: 0, notConfigured: true);
+        }
+
         $checked = 0;
         $synced = 0;
         $skipped = 0;

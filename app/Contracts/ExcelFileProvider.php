@@ -6,6 +6,7 @@ namespace App\Contracts;
 
 use App\DTOs\SharePointExcelFile;
 use App\Exceptions\SharePointException;
+use App\ValueObjects\ConnectionStatus;
 
 /**
  * Behavior contract for a source of Excel files.
@@ -19,9 +20,11 @@ use App\Exceptions\SharePointException;
 interface ExcelFileProvider
 {
     /**
-     * Whether the document source is currently reachable.
+     * Whether the document source is configured and reachable. Returns
+     * ConnectionStatus::NotConfigured (never throws) when required setup
+     * - e.g. a site URL - is missing.
      */
-    public function healthCheck(): bool;
+    public function healthCheck(): ConnectionStatus;
 
     /**
      * List every Excel file currently available, metadata only - no file

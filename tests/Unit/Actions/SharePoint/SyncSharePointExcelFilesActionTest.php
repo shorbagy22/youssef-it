@@ -7,6 +7,7 @@ use App\Contracts\ExcelFileProvider;
 use App\DTOs\SharePointExcelFile;
 use App\Exceptions\SharePointException;
 use App\Repositories\SyncedDocumentRepository;
+use App\ValueObjects\ConnectionStatus;
 use App\ValueObjects\SyncStatus;
 use Illuminate\Support\Facades\Storage;
 
@@ -16,6 +17,7 @@ beforeEach(function () {
 
 test('a new remote file is downloaded and stored', function () {
     $provider = Mockery::mock(ExcelFileProvider::class);
+    $provider->shouldReceive('healthCheck')->once()->andReturn(ConnectionStatus::Connected);
     $provider->shouldReceive('listExcelFiles')->once()->andReturn([
         new SharePointExcelFile('item-1', 'report.xlsx', new DateTimeImmutable('2026-01-01T00:00:00Z'), 100),
     ]);
@@ -27,7 +29,8 @@ test('a new remote file is downloaded and stored', function () {
     expect($result->checked)->toBe(1)
         ->and($result->synced)->toBe(1)
         ->and($result->skipped)->toBe(0)
-        ->and($result->failed)->toBe(0);
+        ->and($result->failed)->toBe(0)
+        ->and($result->notConfigured)->toBeFalse();
 
     Storage::disk('local')->assertExists('sharepoint-excel/item-1.xlsx');
 
@@ -49,6 +52,7 @@ test('an unchanged remote file is skipped without downloading', function () {
     );
 
     $provider = Mockery::mock(ExcelFileProvider::class);
+    $provider->shouldReceive('healthCheck')->once()->andReturn(ConnectionStatus::Connected);
     $provider->shouldReceive('listExcelFiles')->once()->andReturn([
         new SharePointExcelFile('item-1', 'report.xlsx', new DateTimeImmutable('2026-01-01T00:00:00Z'), 100),
     ]);
@@ -75,6 +79,7 @@ test('a changed remote file is re-downloaded', function () {
     );
 
     $provider = Mockery::mock(ExcelFileProvider::class);
+    $provider->shouldReceive('healthCheck')->once()->andReturn(ConnectionStatus::Connected);
     $provider->shouldReceive('listExcelFiles')->once()->andReturn([
         new SharePointExcelFile('item-1', 'report.xlsx', new DateTimeImmutable('2026-01-02T00:00:00Z'), 200),
     ]);
@@ -94,6 +99,7 @@ test('a failed download is recorded and does not stop the rest of the sync', fun
     $repository = new SyncedDocumentRepository;
 
     $provider = Mockery::mock(ExcelFileProvider::class);
+    $provider->shouldReceive('healthCheck')->once()->andReturn(ConnectionStatus::Connected);
     $provider->shouldReceive('listExcelFiles')->once()->andReturn([
         new SharePointExcelFile('item-1', 'broken.xlsx', new DateTimeImmutable('2026-01-01T00:00:00Z'), 100),
         new SharePointExcelFile('item-2', 'good.xlsx', new DateTimeImmutable('2026-01-01T00:00:00Z'), 100),
@@ -112,4 +118,19 @@ test('a failed download is recorded and does not stop the rest of the sync', fun
 
     expect($repository->findBySharePointId('item-1')->sync_status)->toBe(SyncStatus::Failed)
         ->and($repository->findBySharePointId('item-2')->sync_status)->toBe(SyncStatus::Synced);
+});
+
+test('it exits gracefully without listing or downloading anything when SharePoint is not configured', function () {
+    $provider = Mockery::mock(ExcelFileProvider::class);
+    $provider->shouldReceive('healthCheck')->once()->andReturn(ConnectionStatus::NotConfigured);
+    $provider->shouldReceive('listExcelFiles')->never();
+    $provider->shouldReceive('downloadFile')->never();
+
+    $action = new SyncSharePointExcelFilesAction($provider, new SyncedDocumentRepository);
+    $result = $action->handle();
+
+    expect($result->notConfigured)->toBeTrue()
+        ->and($result->checked)->toBe(0)
+        ->and($result->synced)->toBe(0)
+        ->and($result->failed)->toBe(0);
 });

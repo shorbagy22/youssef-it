@@ -37,6 +37,12 @@ final class SyncSharePointExcelFiles extends Command
             return self::FAILURE;
         }
 
+        if ($result->notConfigured) {
+            $this->info('SharePoint is not configured.');
+
+            return self::SUCCESS;
+        }
+
         $this->info(
             "Checked {$result->checked} file(s): {$result->synced} synced, ".
             "{$result->skipped} unchanged, {$result->failed} failed."

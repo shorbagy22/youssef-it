@@ -11,6 +11,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// The source Excel files in SharePoint are updated daily, so the sync
-// runs on the same cadence.
-Schedule::command(SyncSharePointExcelFiles::class)->daily();
+// Cadence is configurable via SHAREPOINT_SYNC_SCHEDULE (config/sharepoint.php)
+// rather than hardcoded here, so it can change without a code change.
+Schedule::command(SyncSharePointExcelFiles::class)->cron((string) config('sharepoint.sync_schedule'));

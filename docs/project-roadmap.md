@@ -51,6 +51,7 @@ class-by-class explanation.
 | P3.4 | `SyncedDocumentRepository`, `SyncSharePointExcelFilesAction` (change detection, download, store), `sharepoint:sync-excel` console command + daily schedule, container binding |
 | P3.5 | Unit and feature tests, Graph fully mocked via `Http::fake()` |
 | P3.6 | Docs (`sharepoint.md`, this file), final validation, a single Phase 3 commit |
+| P3.7 | Config-only placeholder rework: `site_url`/`document_library`/`excel_folder`/`sync_schedule` replace hardcoded `site_id`/`drive_id`, dynamic Site ID/Drive ID resolution in `MicrosoftGraphClient`, `healthCheck()` returns `ConnectionStatus` (`NotConfigured` when `SHAREPOINT_SITE_URL` is empty, never throws), `sharepoint:test` diagnostic command, dashboard's SharePoint card wired to real `healthCheck()`, `docs/sharepoint-setup.md` runbook |
 
 Explicitly out of scope for Phase 3, per standing instruction: AI, RAG,
 embeddings, vector databases, PDF/Word parsing. Excel is the only
@@ -75,10 +76,9 @@ checksum) are synced.
    request. This is a departure from the original Phase 1/2 "SharePoint →
    Ollama per request, no caching" plan, superseded by the sync-based
    architecture adopted in Phase 3.
-5. **Dashboard status cards go live** — `GetSystemStatusAction` swaps its
-   hardcoded SharePoint/Ollama values for real connectivity checks
-   (`SharePointExcelService::healthCheck()` and
-   `OllamaClient::isHealthy()` already exist for this).
+5. **Ollama's dashboard card goes live** — SharePoint's card already uses
+   real `healthCheck()` (P3.7); `GetSystemStatusAction` still needs to
+   swap Ollama's hardcoded value for `OllamaClient::isHealthy()`.
 
 Explicitly out of scope, per standing architectural decision: RAG,
 embeddings, vector databases, Azure AI Search, local document indexing,

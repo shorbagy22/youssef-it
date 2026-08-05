@@ -22,5 +22,6 @@ final readonly class SyncResult
         public int $skipped,
         public int $failed,
         public array $errors = [],
+        public bool $notConfigured = false,
     ) {}
 }

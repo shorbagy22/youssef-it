@@ -10,7 +10,13 @@ declare(strict_types=1);
 | Connection details for authenticating against Microsoft Graph (client
 | credentials / app-only OAuth2 flow) and locating the SharePoint document
 | library that Excel files are synced from. Used by
-| App\Services\MicrosoftGraphClient. See docs/sharepoint.md.
+| App\Services\MicrosoftGraphClient. See docs/sharepoint.md and
+| docs/sharepoint-setup.md.
+|
+| The Site ID and Drive ID are never configured directly - they're
+| resolved dynamically from site_url/document_library at runtime, so
+| filling in these values is the only setup step ever required; no code
+| changes.
 |
 */
 
@@ -26,16 +32,25 @@ return [
     // Azure AD app registration client secret. Never log this value.
     'client_secret' => env('SHAREPOINT_CLIENT_SECRET'),
 
-    // The Microsoft Graph site ID (not the site URL) hosting the document
-    // library, e.g. resolved once via GET /sites/{hostname}:/{path}.
-    'site_id' => env('SHAREPOINT_SITE_ID'),
+    // Full URL of the SharePoint site, e.g.
+    // "https://contoso.sharepoint.com/sites/TeamSite". Left empty means
+    // SharePoint is not configured yet - MicrosoftGraphClient::healthCheck()
+    // returns ConnectionStatus::NotConfigured and nothing else attempts a
+    // Graph call.
+    'site_url' => env('SHAREPOINT_SITE_URL', ''),
 
-    // The Microsoft Graph drive ID (document library) within the site
-    // above to sync Excel files from.
-    'drive_id' => env('SHAREPOINT_DRIVE_ID'),
+    // Name of the document library to sync Excel files from, as shown in
+    // the SharePoint UI (e.g. "Shared Documents"). Matched against Graph's
+    // drive resource for the site - see MicrosoftGraphClient for the
+    // matching rules (Graph's default library is internally named
+    // "Documents", not "Shared Documents", which is handled there).
+    'document_library' => env('SHAREPOINT_DOCUMENT_LIBRARY', 'Shared Documents'),
 
-    // Optional subfolder path within the drive to scan for Excel files,
-    // e.g. "Reports/Daily". Empty means the drive's root folder.
-    'folder_path' => env('SHAREPOINT_FOLDER_PATH', ''),
+    // Subfolder within the document library containing the Excel files.
+    'excel_folder' => env('SHAREPOINT_EXCEL_FOLDER', 'Daily Reports'),
+
+    // Cron expression controlling how often `sharepoint:sync-excel` runs
+    // (see routes/console.php). Default: daily at 2am.
+    'sync_schedule' => env('SHAREPOINT_SYNC_SCHEDULE', '0 2 * * *'),
 
 ];

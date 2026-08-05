@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Contracts\ExcelFileProvider;
 use App\DTOs\SharePointExcelFile;
 use App\Exceptions\SharePointException;
+use App\ValueObjects\ConnectionStatus;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\Log;
 
@@ -30,7 +31,7 @@ final class SharePointExcelService implements ExcelFileProvider
         private readonly MicrosoftGraphClient $graphClient,
     ) {}
 
-    public function healthCheck(): bool
+    public function healthCheck(): ConnectionStatus
     {
         return $this->graphClient->healthCheck();
     }
@@ -61,9 +62,12 @@ final class SharePointExcelService implements ExcelFileProvider
 
         $content = $this->graphClient->downloadContent($fileId);
 
+        // Resolution already happened (and was memoized) inside
+        // downloadContent() above, so these two calls cost no extra
+        // Graph requests.
         Log::channel((string) config('chatbot.log_channel'))->info('Downloaded SharePoint Excel file', [
-            'site_id' => config('sharepoint.site_id'),
-            'drive_id' => config('sharepoint.drive_id'),
+            'site_id' => $this->graphClient->resolveSiteId(),
+            'drive_id' => $this->graphClient->resolveDriveId(),
             'document_id' => $fileId,
             'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
             'size_bytes' => strlen($content),

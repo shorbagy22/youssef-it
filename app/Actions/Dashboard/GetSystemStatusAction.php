@@ -4,39 +4,40 @@ declare(strict_types=1);
 
 namespace App\Actions\Dashboard;
 
+use App\Contracts\ExcelFileProvider;
 use App\DTOs\Dashboard\SystemStatusData;
 use App\ValueObjects\ConnectionStatus;
 
 /**
  * Builds the system status snapshot shown on the dashboard.
  *
- * Every status is hardcoded for Phase 1, per the explicit "use fake
- * status for now" requirement - no SharePoint, Ollama, or chat
- * integration exists yet. Each value below notes what its real check
- * will become once that milestone lands; this Action is the only place
- * that will need to change - DashboardController and the dashboard view
- * depend solely on the SystemStatusData shape.
+ * SharePoint's status is real - ExcelFileProvider::healthCheck() never
+ * throws, so this Action doesn't need to catch anything around it: it
+ * returns NotConfigured when SHAREPOINT_SITE_URL is empty, Connected or
+ * Disconnected once it's set. Ollama, database, and authentication are
+ * still hardcoded for now; each comment below notes what its real check
+ * will become.
  */
 final class GetSystemStatusAction
 {
-    /**
-     * Build the current (currently fake) system status snapshot.
-     */
+    public function __construct(
+        private readonly ExcelFileProvider $excelFiles,
+    ) {}
+
     public function handle(): SystemStatusData
     {
         return new SystemStatusData(
-            // Future: a Microsoft Graph call using config('sharepoint.*').
-            sharePoint: ConnectionStatus::NotConfigured,
+            sharePoint: $this->excelFiles->healthCheck(),
 
-            // Future: an HTTP call to config('ollama.base_url').
+            // Future: OllamaClient::isHealthy().
             ollama: ConnectionStatus::NotConfigured,
 
             // Future: a real DB ping. Left fake here for consistency
-            // with the other three cards in this milestone.
+            // with the two cards above.
             database: ConnectionStatus::Connected,
 
             // Future: reflect the current request's auth state. Left
-            // fake here for consistency with the other three cards.
+            // fake here for consistency with the two cards above.
             authentication: ConnectionStatus::Connected,
         );
     }

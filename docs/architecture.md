@@ -83,15 +83,17 @@ it yet - that's Phase 5).
 
 **This supersedes the "SharePoint retrieval feeds directly into the chat
 prompt" plan from earlier phases.** SharePoint is now treated as a
-structured Excel data source that syncs into MySQL on a daily schedule,
-independent of the chat pipeline above - see
+structured Excel data source that syncs into MySQL on a configurable
+schedule, independent of the chat pipeline above - see
 [`sharepoint.md`](sharepoint.md) for the full pipeline, the Graph API it
-relies on, and an explanation of every class. In short:
+relies on, and an explanation of every class, and
+[`sharepoint-setup.md`](sharepoint-setup.md) for the runbook to configure
+a real SharePoint site. In short:
 
 ```
 SharePoint (Excel files)
   → Microsoft Graph API
-  → MicrosoftGraphClient (auth + generic Graph HTTP calls)
+  → MicrosoftGraphClient (auth + dynamic site/drive resolution + generic Graph HTTP calls)
   → SharePointExcelService (filters to Excel, returns DTOs)
   → SyncSharePointExcelFilesAction (list, compare, download, store)
   → SyncedDocumentRepository → MySQL (synced_documents) + local disk (raw bytes)
@@ -120,11 +122,19 @@ milestone that touches it:
   single console command invocation.
 - If SharePoint is unreachable, the sync command exits non-zero and logs
   the failure; an individual file's download failure marks just that file
-  `Failed` and the run continues with the rest.
+  `Failed` and the run continues with the rest. If it's simply
+  unconfigured (`SHAREPOINT_SITE_URL` empty), everything exits cleanly
+  with no exceptions - see `sharepoint.md`.
+- **The Graph Site ID and Drive ID are never configured directly** - both
+  are resolved dynamically at runtime from `SHAREPOINT_SITE_URL` and
+  `SHAREPOINT_DOCUMENT_LIBRARY`, so setting this up for a real environment
+  is purely a `.env` change (see `sharepoint-setup.md`), never a code
+  change.
 - Configuration lives in `config/sharepoint.php`, populated entirely from
   `.env` (`SHAREPOINT_TENANT_ID`, `SHAREPOINT_CLIENT_ID`,
-  `SHAREPOINT_CLIENT_SECRET`, `SHAREPOINT_SITE_ID`, `SHAREPOINT_DRIVE_ID`,
-  `SHAREPOINT_FOLDER_PATH`).
+  `SHAREPOINT_CLIENT_SECRET`, `SHAREPOINT_SITE_URL`,
+  `SHAREPOINT_DOCUMENT_LIBRARY`, `SHAREPOINT_EXCEL_FOLDER`,
+  `SHAREPOINT_SYNC_SCHEDULE`).
 
 ## Planned: Excel parsing and chatbot data lookup
 

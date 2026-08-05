@@ -26,7 +26,10 @@ spreadsheet contents (Phase 4) or run any AI/RAG over them.
   `ollama pull llama3.1`), to use the chat feature
 - An Azure AD app registration with `Files.Read.All` (or `Sites.Read.All`)
   application permission and admin consent, to use the SharePoint sync —
-  see [`docs/sharepoint.md`](docs/sharepoint.md)
+  see [`docs/sharepoint-setup.md`](docs/sharepoint-setup.md) for the exact
+  steps. Until this is configured (`SHAREPOINT_SITE_URL` left empty), the
+  sync and dashboard both report "Not Configured" cleanly — no code
+  changes are needed once you're ready to fill it in.
 
 ## Setup
 
@@ -58,6 +61,7 @@ Vite dev server together. Visit `http://localhost:8000`.
 - [`docs/architecture.md`](docs/architecture.md) — Clean Architecture layering and how the chat and SharePoint pipelines fit together
 - [`docs/ollama-api.md`](docs/ollama-api.md) — the Ollama HTTP API and every class in the chat pipeline
 - [`docs/sharepoint.md`](docs/sharepoint.md) — Microsoft Graph auth/API, the Excel sync pipeline, and every class in it
+- [`docs/sharepoint-setup.md`](docs/sharepoint-setup.md) — step-by-step runbook to configure a real SharePoint site
 - [`docs/development.md`](docs/development.md) — local dev workflow, tooling, and how to run checks
 - [`docs/project-roadmap.md`](docs/project-roadmap.md) — milestone plan from Phase 1 onward
 

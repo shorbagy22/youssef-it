@@ -6,6 +6,7 @@ use App\DTOs\SharePointExcelFile;
 use App\Exceptions\SharePointException;
 use App\Services\MicrosoftGraphClient;
 use App\Services\SharePointExcelService;
+use App\ValueObjects\ConnectionStatus;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
@@ -13,19 +14,27 @@ beforeEach(function () {
         'sharepoint.tenant_id' => 'tenant-123',
         'sharepoint.client_id' => 'client-123',
         'sharepoint.client_secret' => 'secret-123',
-        'sharepoint.site_id' => 'site-123',
-        'sharepoint.drive_id' => 'drive-123',
-        'sharepoint.folder_path' => '',
-    ]);
-
-    Http::fake([
-        'login.microsoftonline.com/*' => Http::response([
-            'token_type' => 'Bearer',
-            'expires_in' => 3599,
-            'access_token' => 'fake-token',
-        ], 200),
+        'sharepoint.site_url' => 'https://contoso.sharepoint.com/sites/TeamSite',
+        'sharepoint.document_library' => 'Shared Documents',
+        'sharepoint.excel_folder' => '',
     ]);
 });
+
+/**
+ * @return array<string, mixed>
+ */
+function excelServiceFakeAuthAndResolution(): array
+{
+    return [
+        'login.microsoftonline.com/*' => Http::response(['token_type' => 'Bearer', 'expires_in' => 3599, 'access_token' => 'fake-token'], 200),
+        'graph.microsoft.com/v1.0/sites/contoso.sharepoint.com:/sites/TeamSite' => Http::response(['id' => 'site-123'], 200),
+        'graph.microsoft.com/v1.0/sites/site-123/drives' => Http::response([
+            'value' => [
+                ['id' => 'drive-123', 'name' => 'Shared Documents', 'webUrl' => 'https://contoso.sharepoint.com/sites/TeamSite/Shared%20Documents'],
+            ],
+        ], 200),
+    ];
+}
 
 function makeSharePointExcelService(): SharePointExcelService
 {
@@ -34,7 +43,7 @@ function makeSharePointExcelService(): SharePointExcelService
 
 test('listExcelFiles returns only .xlsx and .xls files, skipping folders and other types', function () {
     Http::fake([
-        'login.microsoftonline.com/*' => Http::response(['token_type' => 'Bearer', 'expires_in' => 3599, 'access_token' => 'fake-token'], 200),
+        ...excelServiceFakeAuthAndResolution(),
         'graph.microsoft.com/v1.0/drives/drive-123/root/children' => Http::response([
             'value' => [
                 ['id' => '1', 'name' => 'report.xlsx', 'size' => 100, 'lastModifiedDateTime' => '2026-01-01T00:00:00Z', 'file' => ['mimeType' => 'application/vnd.openxmlformats']],
@@ -55,7 +64,7 @@ test('listExcelFiles returns only .xlsx and .xls files, skipping folders and oth
 
 test('listExcelFiles throws when an Excel file record is missing required fields', function () {
     Http::fake([
-        'login.microsoftonline.com/*' => Http::response(['token_type' => 'Bearer', 'expires_in' => 3599, 'access_token' => 'fake-token'], 200),
+        ...excelServiceFakeAuthAndResolution(),
         'graph.microsoft.com/v1.0/drives/drive-123/root/children' => Http::response([
             'value' => [
                 // Passes the "is this an Excel file" filter (has a
@@ -72,7 +81,7 @@ test('listExcelFiles throws when an Excel file record is missing required fields
 
 test('downloadFile returns the raw file content', function () {
     Http::fake([
-        'login.microsoftonline.com/*' => Http::response(['token_type' => 'Bearer', 'expires_in' => 3599, 'access_token' => 'fake-token'], 200),
+        ...excelServiceFakeAuthAndResolution(),
         'graph.microsoft.com/v1.0/drives/drive-123/items/item-1/content' => Http::response('binary-excel-bytes', 200),
     ]);
 
@@ -82,10 +91,13 @@ test('downloadFile returns the raw file content', function () {
 });
 
 test('healthCheck delegates to the Graph client', function () {
-    Http::fake([
-        'login.microsoftonline.com/*' => Http::response(['token_type' => 'Bearer', 'expires_in' => 3599, 'access_token' => 'fake-token'], 200),
-        'graph.microsoft.com/v1.0/drives/drive-123' => Http::response(['id' => 'drive-123'], 200),
-    ]);
+    Http::fake([...excelServiceFakeAuthAndResolution()]);
 
-    expect(makeSharePointExcelService()->healthCheck())->toBeTrue();
+    expect(makeSharePointExcelService()->healthCheck())->toBe(ConnectionStatus::Connected);
+});
+
+test('healthCheck returns NotConfigured when the site URL is empty', function () {
+    config(['sharepoint.site_url' => '']);
+
+    expect(makeSharePointExcelService()->healthCheck())->toBe(ConnectionStatus::NotConfigured);
 });
