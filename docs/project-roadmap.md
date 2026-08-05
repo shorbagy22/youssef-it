@@ -35,28 +35,53 @@ explanation.
 | P2.7 | Unit and feature tests, Ollama fully mocked via `Http::fake()` |
 | P2.8 | Docs (`ollama-api.md`, this file), final validation, a single Phase 2 commit |
 
-## Beyond Phase 2
+## Phase 3 — SharePoint Excel sync (complete)
 
-The SharePoint side of the architecture (see
-[`architecture.md`](architecture.md)) is designed and approved, but not
-yet built:
+**Architecture change from the original Phase 1/2 plan**: SharePoint is
+now treated as a structured Excel data source that syncs into MySQL on a
+daily schedule, not a generic document store queried per chat request.
+See [`sharepoint.md`](sharepoint.md) for the full pipeline and
+class-by-class explanation.
 
-1. **`SharePointConnector`** — downloads documents from SharePoint via
-   Laravel's `Http` client (no Microsoft Graph SDK), independent of
-   `OllamaClient`.
-2. **`DocumentExtractor`** — extracts text from PDF/DOCX/XLSX/TXT.
-3. **`PromptBuilder` gains retrieval context** — the existing `?string
-   $context` parameter on `buildSystemPrompt()` starts being passed
-   extracted document text instead of always `null`.
-4. **`ChatService`/`ChatAction` gain the retrieval step** — SharePoint
-   download and extraction happen before prompt building; the response
-   grows a `sources` field alongside `answer`.
+| Task | Description |
+|---|---|
+| P3.1 | `config/sharepoint.php` folder path, `synced_documents` migration, `SyncedDocument` model, `SyncStatus` enum |
+| P3.2 | `SharePointExcelFile`/`SyncResult` DTOs, `ExcelFileProvider` contract, `SharePointException` |
+| P3.3 | `MicrosoftGraphClient` (client-credentials auth, retries, healthCheck/listChildren/getItemMetadata/downloadContent) and `SharePointExcelService` (Excel filtering, DTOs, logging) |
+| P3.4 | `SyncedDocumentRepository`, `SyncSharePointExcelFilesAction` (change detection, download, store), `sharepoint:sync-excel` console command + daily schedule, container binding |
+| P3.5 | Unit and feature tests, Graph fully mocked via `Http::fake()` |
+| P3.6 | Docs (`sharepoint.md`, this file), final validation, a single Phase 3 commit |
+
+Explicitly out of scope for Phase 3, per standing instruction: AI, RAG,
+embeddings, vector databases, PDF/Word parsing. Excel is the only
+supported file type, and its *contents* aren't read yet - only raw file
+bytes and metadata (name, SharePoint ID, modified date, sync status,
+checksum) are synced.
+
+## Beyond Phase 3
+
+1. **Excel Parser** — reads the raw `.xlsx` files already synced to
+   `storage/app/private/sharepoint-excel/`, using each `SyncedDocument`
+   row to know which files are current.
+2. **Database Import** — writes parsed spreadsheet rows into their own
+   MySQL tables, separate from `synced_documents` (which only tracks
+   file-level sync state, not row-level content).
+3. **Data Normalization** — shapes the imported data into a consistent,
+   queryable structure across whatever Excel formats/columns the source
+   files use.
+4. **Phase 5: chatbot connects to MySQL** — `ChatService` gains a
+   data-lookup step ahead of prompt building, querying the normalized
+   tables from Phase 4 instead of calling SharePoint directly per chat
+   request. This is a departure from the original Phase 1/2 "SharePoint →
+   Ollama per request, no caching" plan, superseded by the sync-based
+   architecture adopted in Phase 3.
 5. **Dashboard status cards go live** — `GetSystemStatusAction` swaps its
-   hardcoded SharePoint/Ollama values for real connectivity checks (Ollama
-   can now use `OllamaClient::isHealthy()`).
+   hardcoded SharePoint/Ollama values for real connectivity checks
+   (`SharePointExcelService::healthCheck()` and
+   `OllamaClient::isHealthy()` already exist for this).
 
 Explicitly out of scope, per standing architectural decision: RAG,
 embeddings, vector databases, Azure AI Search, local document indexing,
-document caching, queues, and background jobs. The pipeline is kept
-modular enough that these *could* be added later without changing the
-orchestrating Action's public shape, but none are planned.
+queues, and background jobs. The pipeline is kept modular enough that
+these *could* be added later without changing established public shapes,
+but none are planned.

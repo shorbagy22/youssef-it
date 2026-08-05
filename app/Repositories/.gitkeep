@@ -1,4 +1,0 @@
-Concrete implementations of persistence-related Contracts, wrapping
-Eloquent queries behind an interface - isolates "how data is stored" from
-business logic in Actions. Populated once a feature needs its own
-persistence beyond what Models/migrations already cover.

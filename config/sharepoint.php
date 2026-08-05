@@ -9,9 +9,8 @@ declare(strict_types=1);
 |
 | Connection details for authenticating against Microsoft Graph (client
 | credentials / app-only OAuth2 flow) and locating the SharePoint document
-| library the chatbot reads from. Nothing in the application reads these
-| values yet - SharePoint integration is a later milestone. Defined now so
-| the configuration surface is settled before that work begins.
+| library that Excel files are synced from. Used by
+| App\Services\MicrosoftGraphClient. See docs/sharepoint.md.
 |
 */
 
@@ -32,7 +31,11 @@ return [
     'site_id' => env('SHAREPOINT_SITE_ID'),
 
     // The Microsoft Graph drive ID (document library) within the site
-    // above to read documents from.
+    // above to sync Excel files from.
     'drive_id' => env('SHAREPOINT_DRIVE_ID'),
+
+    // Optional subfolder path within the drive to scan for Excel files,
+    // e.g. "Reports/Daily". Empty means the drive's root folder.
+    'folder_path' => env('SHAREPOINT_FOLDER_PATH', ''),
 
 ];

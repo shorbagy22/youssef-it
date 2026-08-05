@@ -6,13 +6,15 @@ Blade, and Bootstrap 5.
 
 ## Status
 
-**Phase 2 — Local Ollama chatbot.** The app now has a working chat feature
-backed by a local Ollama server (`POST /api/generate`) — see
-[`docs/ollama-api.md`](docs/ollama-api.md) for the pipeline and
-[`docs/project-roadmap.md`](docs/project-roadmap.md) for what's next.
-SharePoint document retrieval is designed but **not yet built**; every
-chat answer today comes from the model alone, with no company documents
-grounding it.
+**Phase 3 — SharePoint Excel sync.** The app now syncs Excel files from a
+SharePoint document library into MySQL on a daily schedule — see
+[`docs/sharepoint.md`](docs/sharepoint.md) for the pipeline and
+[`docs/project-roadmap.md`](docs/project-roadmap.md) for what's next. This
+sync is independent of the chat feature (Phase 2, see
+[`docs/ollama-api.md`](docs/ollama-api.md)): chat answers still come from
+the model alone today, with no SharePoint data grounding them yet — that's
+Phase 5. Phase 3 only syncs raw Excel files and metadata; it doesn't read
+spreadsheet contents (Phase 4) or run any AI/RAG over them.
 
 ## Requirements
 
@@ -22,6 +24,9 @@ grounding it.
 - MySQL 8+
 - [Ollama](https://ollama.com), running locally with a model pulled (e.g.
   `ollama pull llama3.1`), to use the chat feature
+- An Azure AD app registration with `Files.Read.All` (or `Sites.Read.All`)
+  application permission and admin consent, to use the SharePoint sync —
+  see [`docs/sharepoint.md`](docs/sharepoint.md)
 
 ## Setup
 
@@ -50,8 +55,9 @@ Vite dev server together. Visit `http://localhost:8000`.
 
 ## Documentation
 
-- [`docs/architecture.md`](docs/architecture.md) — Clean Architecture layering and the planned SharePoint/Ollama pipeline
+- [`docs/architecture.md`](docs/architecture.md) — Clean Architecture layering and how the chat and SharePoint pipelines fit together
 - [`docs/ollama-api.md`](docs/ollama-api.md) — the Ollama HTTP API and every class in the chat pipeline
+- [`docs/sharepoint.md`](docs/sharepoint.md) — Microsoft Graph auth/API, the Excel sync pipeline, and every class in it
 - [`docs/development.md`](docs/development.md) — local dev workflow, tooling, and how to run checks
 - [`docs/project-roadmap.md`](docs/project-roadmap.md) — milestone plan from Phase 1 onward
 
