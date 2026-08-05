@@ -6,11 +6,13 @@ Blade, and Bootstrap 5.
 
 ## Status
 
-**Phase 1 — Foundation.** This milestone ships the application skeleton only:
-authentication (Laravel Breeze), a dashboard with system status cards, the
-Clean Architecture folder structure, and full tooling (Pint, PHPStan, Pest,
-CI). It does **not** yet include SharePoint, Ollama, or chat functionality —
-see [`docs/project-roadmap.md`](docs/project-roadmap.md) for what's next.
+**Phase 2 — Local Ollama chatbot.** The app now has a working chat feature
+backed by a local Ollama server (`POST /api/generate`) — see
+[`docs/ollama-api.md`](docs/ollama-api.md) for the pipeline and
+[`docs/project-roadmap.md`](docs/project-roadmap.md) for what's next.
+SharePoint document retrieval is designed but **not yet built**; every
+chat answer today comes from the model alone, with no company documents
+grounding it.
 
 ## Requirements
 
@@ -18,6 +20,8 @@ see [`docs/project-roadmap.md`](docs/project-roadmap.md) for what's next.
 - Composer 2
 - Node 20+ and npm
 - MySQL 8+
+- [Ollama](https://ollama.com), running locally with a model pulled (e.g.
+  `ollama pull llama3.1`), to use the chat feature
 
 ## Setup
 
@@ -47,6 +51,7 @@ Vite dev server together. Visit `http://localhost:8000`.
 ## Documentation
 
 - [`docs/architecture.md`](docs/architecture.md) — Clean Architecture layering and the planned SharePoint/Ollama pipeline
+- [`docs/ollama-api.md`](docs/ollama-api.md) — the Ollama HTTP API and every class in the chat pipeline
 - [`docs/development.md`](docs/development.md) — local dev workflow, tooling, and how to run checks
 - [`docs/project-roadmap.md`](docs/project-roadmap.md) — milestone plan from Phase 1 onward
 

@@ -15,7 +15,8 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
-    Route::get('/chat', ChatController::class)->name('chat');
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat');
+    Route::post('/chat/send', [ChatController::class, 'send'])->name('chat.send');
     Route::get('/documents', DocumentController::class)->name('documents');
     Route::get('/settings', SettingsController::class)->name('settings');
 });

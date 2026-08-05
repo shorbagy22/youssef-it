@@ -8,9 +8,7 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 |
 | Connection details for the local Ollama server the chatbot sends prompts
-| to. Nothing in the application calls Ollama yet - this is a later
-| milestone. Defined now so the configuration surface is settled before
-| that work begins.
+| to, used by App\Services\OllamaClient.
 |
 */
 
@@ -24,5 +22,11 @@ return [
 
     // Request timeout, in seconds, for calls to Ollama.
     'timeout' => env('OLLAMA_TIMEOUT', 120),
+
+    // Number of retry attempts on connection failure, beyond the first try.
+    'retries' => env('OLLAMA_RETRIES', 2),
+
+    // Delay between retry attempts, in milliseconds.
+    'retry_delay_ms' => env('OLLAMA_RETRY_DELAY_MS', 250),
 
 ];

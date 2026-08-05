@@ -1,6 +1,6 @@
 # Project Roadmap
 
-## Phase 1 — Foundation (current)
+## Phase 1 — Foundation (complete)
 
 Application skeleton only. No SharePoint, Ollama, RAG, or chat
 functionality.
@@ -17,28 +17,43 @@ functionality.
 | P1.8 | Docs: README, architecture.md, development.md, project-roadmap.md (this file) |
 | P1.9 | Final validation (Pint, PHPStan, Pest) and a single Phase 1 commit |
 
-## Beyond Phase 1
+## Phase 2 — Local Ollama chatbot (complete)
 
-The SharePoint → Ollama chat pipeline is fully designed (see
-[`architecture.md`](architecture.md)) and approved, but not yet built.
-Expected milestones, each landing as its own commit:
+A complete, working chat feature against a local Ollama server - no
+SharePoint yet, no document retrieval. See
+[`ollama-api.md`](ollama-api.md) for the full pipeline and class-by-class
+explanation.
 
-1. **`OllamaClient`** — thin HTTP client for `POST /api/generate` against a
-   local Ollama instance, independent of everything else.
-2. **`SharePointConnector`** — downloads documents from SharePoint via
+| Task | Description |
+|---|---|
+| P2.1 | `config/ollama.php` retries/delay, `OllamaUnavailableException`, `LLMClient` contract |
+| P2.2 | `ChatRequest`/`ChatResponse` DTOs |
+| P2.3 | `OllamaClient` (Http client, retries, timeout, structured logging, health check) and `PromptBuilder` |
+| P2.4 | `ChatService`, `ChatAction`, `LLMClient` → `OllamaClient` container binding |
+| P2.5 | `ChatController` (`index`/`send`), routes |
+| P2.6 | Chat Blade UI: message history, typing indicator, streaming placeholder |
+| P2.7 | Unit and feature tests, Ollama fully mocked via `Http::fake()` |
+| P2.8 | Docs (`ollama-api.md`, this file), final validation, a single Phase 2 commit |
+
+## Beyond Phase 2
+
+The SharePoint side of the architecture (see
+[`architecture.md`](architecture.md)) is designed and approved, but not
+yet built:
+
+1. **`SharePointConnector`** — downloads documents from SharePoint via
    Laravel's `Http` client (no Microsoft Graph SDK), independent of
    `OllamaClient`.
-3. **`DocumentExtractor`** — extracts text from PDF/DOCX/XLSX/TXT.
-4. **`PromptBuilder`** — composes one prompt from extracted document text
-   and the user's question.
-5. **Orchestrating Action + Controller/route** — wires the four pieces
-   above into a single request/response cycle returning
-   `{"answer": "...", "sources": [...]}`, with HTTP 503 if SharePoint or
-   Ollama is unavailable.
-6. **Chat UI** — replaces the Phase 1 placeholder `chat/index.blade.php`
-   with a real interface calling the endpoint above.
-7. **Dashboard status cards go live** — `GetSystemStatusAction` swaps its
-   hardcoded SharePoint/Ollama values for real connectivity checks.
+2. **`DocumentExtractor`** — extracts text from PDF/DOCX/XLSX/TXT.
+3. **`PromptBuilder` gains retrieval context** — the existing `?string
+   $context` parameter on `buildSystemPrompt()` starts being passed
+   extracted document text instead of always `null`.
+4. **`ChatService`/`ChatAction` gain the retrieval step** — SharePoint
+   download and extraction happen before prompt building; the response
+   grows a `sources` field alongside `answer`.
+5. **Dashboard status cards go live** — `GetSystemStatusAction` swaps its
+   hardcoded SharePoint/Ollama values for real connectivity checks (Ollama
+   can now use `OllamaClient::isHealthy()`).
 
 Explicitly out of scope, per standing architectural decision: RAG,
 embeddings, vector databases, Azure AI Search, local document indexing,

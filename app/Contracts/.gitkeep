@@ -1,5 +1,0 @@
-Interfaces defining behavior contracts (e.g. SharePointConnectorContract,
-LlmClientContract). Actions and other Contracts depend on these, never on
-the concrete classes in Services/Repositories - this is the Dependency
-Inversion seam. Populated starting with the SharePoint/Ollama integration
-milestone.
