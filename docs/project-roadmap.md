@@ -87,8 +87,35 @@ the Blade UI - needed **zero changes**: it already depended on the
 bound implementation was the entire fix. This is the payoff of the
 Dependency Inversion seam established back in Phase 2.
 
+## Factory data pipeline (complete)
+
+**A second, independent architecture request, coexisting with (not
+replacing) the "Laravel is only an AI client" refactor above.** Laravel
+now reads locally-synced Excel files itself, extracts structured data,
+and calls Ollama directly for a new `/api/chat` JSON endpoint - see
+[`data-pipeline-api.md`](data-pipeline-api.md) for the full pipeline and
+class-by-class explanation.
+
+| Task | Description |
+|---|---|
+| F.1 | `sources`/`data_records` migrations (unique `department`+`date`), `Source`/`DataRecord` models + factories, `Department` backed enum, `config/ollama.php`, `composer require maatwebsite/excel` |
+| F.2 | New `OllamaClient` (direct `POST {base_url}/api/generate`, retries, timeout, structured logging) and `ChatDataService` (context string from latest 10 records + prompt template) |
+| F.3 | `SyncSourcesAction` (Excel parsing, Excel-serial-date handling, file vs url resolution, `updateOrCreate` by department+date, per-source error isolation), `sources:sync` command, `Schedule::command(...)->everyTenMinutes()` |
+| F.4 | `Api\ChatController` (`POST /api/chat`, rate-limited), `Api\SourceController` (`GET`/`POST /api/sources`), `routes/api.php` wired into `bootstrap/app.php` |
+| F.5 | Unit and feature tests - file-type sync exercises a real temporary `.xlsx` file via PhpSpreadsheet, not mocked; Ollama and url-type downloads mocked via `Http::fake()` |
+| F.6 | Docs (`data-pipeline-api.md`, this file, `architecture.md`, `README.md`), final validation, a single commit |
+
+**This message explicitly contradicted core rules from the "Laravel is
+only an AI client" refactor** ("AI backend already handles all data",
+"NO RAG system", call an opaque `/chat` wrapper on port 8000) - flagged
+directly before building, and confirmed by the user as a deliberate
+reversal for this specific data pipeline, not a correction. Both
+pipelines are intentionally left running side by side; neither request
+asked to remove the other.
+
 ## What's next
 
-Nothing is currently planned beyond this refactor. Any future data
-ingestion, RAG, or document-retrieval work belongs to the company AI
-service, not this Laravel application.
+Nothing is currently planned beyond these two pipelines. The user should
+confirm whether the web `/chat` pipeline (AI-API-wrapper based) is still
+wanted alongside this new `/api/chat` pipeline (direct-Ollama based), or
+whether one should eventually be retired.

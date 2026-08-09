@@ -2,22 +2,31 @@
 
 ## Current shape
 
-**Laravel is only an AI client.** The company IT department owns
-SharePoint, Excel synchronization, data ingestion, and the AI model
-(including Ollama) behind a single HTTP endpoint. Laravel's entire
-external dependency surface for the chat feature is that one endpoint -
-no Microsoft Graph integration, no Azure App Registration, no SharePoint
-code, no local Ollama process.
+**Two independent chat pipelines coexist.** Neither was asked to replace
+the other, so both remain functional side by side:
 
 ```
-Blade UI → ChatController → ChatAction → ChatService
+Web /chat pipeline (Blade UI):
+  ChatController → ChatAction → ChatService
     → PromptBuilder (builds system + user prompt)
-    → LLMClient contract → AIClient → company AI HTTP endpoint
+    → LLMClient contract → AIClient → company AI HTTP endpoint (AI_API_URL)
+
+/api/chat data pipeline (JSON API):
+  sources:sync (scheduled every 10 min) → SyncSourcesAction
+    → reads a local/downloaded Excel file → extracts NRFT/PPM/defects
+    → data_records (MySQL)
+
+  Api\ChatController → ChatDataService (builds prompt from recent
+    data_records) → OllamaClient → Ollama directly (OLLAMA_BASE_URL)
 ```
 
-See [`ai-client.md`](ai-client.md) for the full request/response shape,
-retry/timeout/logging behavior, and an explanation of every class in this
-pipeline.
+The first pipeline treats the AI service as a black box that owns
+SharePoint, Excel sync, and data ingestion itself - Laravel only forwards
+a question and department. The second pipeline does the opposite:
+Laravel owns reading and parsing Excel data, storing it structurally, and
+building the prompt itself, calling Ollama's raw API with no wrapper in
+between. See [`ai-client.md`](ai-client.md) for the first and
+[`data-pipeline-api.md`](data-pipeline-api.md) for the second.
 
 ## Layering
 
@@ -42,20 +51,26 @@ Controller → Action → Contracts → Services → External Systems
   only the concrete class bound to `LLMClient` changed.
 - **Services** (`app/Services`) are concrete implementations of Contracts
   that talk to external systems (`AIClient` talking to the company's AI
-  endpoint), plus other business-logic classes that sit below an Action
-  (`ChatService`, `PromptBuilder`).
+  endpoint, `OllamaClient` talking to Ollama directly), plus other
+  business-logic classes that sit below an Action (`ChatService`,
+  `PromptBuilder`, `ChatDataService`).
 - **Repositories** (`app/Repositories`) wrap Eloquent queries, isolating
-  persistence details from business logic. Currently empty - populated
-  once a feature needs its own persistence beyond what Models/migrations
-  already cover.
+  persistence details from business logic. Currently empty - `Source`/
+  `DataRecord` queries are simple enough to live directly in their
+  Action/Controller for now; populate this once a feature needs more.
 - **DTOs** (`app/DTOs`) are immutable, readonly data carriers passed
   between layers (e.g. `SystemStatusData`, `ChatRequest`, `ChatResponse`)
   so callers depend on a stable shape instead of raw arrays.
 - **ValueObjects** (`app/ValueObjects`) are small, self-validating types —
-  currently the `ConnectionStatus` backed enum.
+  `ConnectionStatus` and `Department` (the fixed four-department enum).
 - **Exceptions** (`app/Exceptions`) are meaningfully-named custom
   exceptions so calling code can catch specific failure modes (e.g.
-  `AIServiceUnavailableException`).
+  `AIServiceUnavailableException`, reused by both `AIClient` and
+  `OllamaClient` since both represent the same category of failure - an
+  unreachable AI backend).
+- **Imports** (`app/Imports`) holds `maatwebsite/excel` import classes -
+  currently just `RawRowsImport`, positional row access with no heading
+  row assumed.
 - **Support** (`app/Support`) holds small, framework-agnostic helpers that
   don't belong to any other layer. Still empty - nothing built so far has
   needed it.
@@ -78,20 +93,32 @@ each one landed as its own commit. Full detail lives in git log and
    fully config-driven with no hardcoded IDs, then given richer
    diagnostics (`sharepoint:test`) while investigating a real tenant's
    admin-consent requirement.
-4. **This refactor** - the company IT department took ownership of
-   SharePoint, Excel sync, data ingestion, and the AI model entirely,
-   exposing one HTTP endpoint. Every class from Phases 2-3 that talked to
-   Ollama or Microsoft Graph directly (`OllamaClient`,
+4. **"Laravel is only an AI client" refactor** - the company IT department
+   took ownership of SharePoint, Excel sync, data ingestion, and the AI
+   model entirely, exposing one HTTP endpoint. Every class from Phases 2-3
+   that talked to Ollama or Microsoft Graph directly (`OllamaClient`,
    `MicrosoftGraphClient`, `SharePointExcelService`, `ExcelFileProvider`,
    `SyncSharePointExcelFilesAction`, `SyncedDocumentRepository`,
    `SyncedDocument`, both `sharepoint:*` console commands, and their
    configs/migrations) was removed. `AIClient` replaces `OllamaClient` as
-   the `LLMClient` contract's bound implementation - the only change the
-   chat pipeline needed.
+   the `LLMClient` contract's bound implementation.
+5. **Factory data pipeline** - a second, independent architecture request
+   reversed course on "AI backend does everything": Laravel now reads
+   locally-synced Excel files itself, extracts structured NRFT/PPM/defects
+   data into MySQL every 10 minutes, and calls Ollama's raw API directly
+   for a new `/api/chat` JSON endpoint - a genuinely different integration
+   from the web `/chat` pipeline (4), not a replacement of it. New
+   `OllamaClient` class (same name as the one removed in step 4, but a
+   distinct implementation with no shared history - it's not bound to
+   `LLMClient` and isn't used by the web pipeline).
 
 ## What's not built
 
-No AI, RAG, embeddings, or data ingestion logic lives in Laravel - that's
-entirely the AI service's responsibility now. There is no SharePoint or
-document-browsing feature; `documents.index` and `settings.index` remain
-placeholder pages.
+No RAG, embeddings, or vector database in either pipeline. The web
+`/chat` pipeline still delegates all data ingestion to the external AI
+service; the `/api/chat` pipeline does its own structured extraction but
+never sends raw file content to the AI, and has no admin UI, no auth, and
+no document-browsing feature - `sources`/`data_records` are managed
+purely via `POST /api/sources` and `sources:sync`. `documents.index` and
+`settings.index` remain unrelated placeholder pages from an earlier,
+unbuilt admin-panel proposal.

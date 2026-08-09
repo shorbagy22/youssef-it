@@ -1,19 +1,27 @@
 # CompanyAIChatbot
 
-An enterprise chatbot that answers employee questions via the company's
-centralized AI HTTP endpoint. Laravel is only an AI client - SharePoint
-access, Excel synchronization, data ingestion, and the AI model itself are
-all owned and operated by IT behind that one endpoint. Built with
-Laravel 12, Blade, and Bootstrap 5.
+An enterprise chatbot for a factory, with **two independent chat
+pipelines** currently coexisting in this codebase (see Status below).
+Built with Laravel 12, Blade, and Bootstrap 5.
 
 ## Status
 
-**Laravel is only an AI client.** The chat feature POSTs a question to
-`AI_API_URL` and returns the answer - see
-[`docs/ai-client.md`](docs/ai-client.md) for the full pipeline and
-[`docs/project-roadmap.md`](docs/project-roadmap.md) for history. There is
-no SharePoint code, no Microsoft Graph integration, and no local Ollama
-process in this application anymore.
+Two separate, independent integrations currently exist side by side -
+neither was asked to replace the other, so both remain functional:
+
+1. **Web `/chat` pipeline** - POSTs a question to `AI_API_URL`, a
+   company-owned AI HTTP endpoint that itself owns SharePoint access,
+   Excel sync, and data ingestion. Laravel never sees structured data
+   here. See [`docs/ai-client.md`](docs/ai-client.md).
+2. **`/api/chat` data pipeline** - Laravel itself reads Excel files
+   already synced to a local path (or downloads one from a URL),
+   extracts structured data (NRFT, PPM, defects) into MySQL every 10
+   minutes, and calls Ollama **directly** to answer department-scoped
+   questions using that data. See
+   [`docs/data-pipeline-api.md`](docs/data-pipeline-api.md).
+
+No SharePoint API integration or Microsoft Graph in either pipeline - see
+[`docs/project-roadmap.md`](docs/project-roadmap.md) for full history.
 
 ## Requirements
 
@@ -21,8 +29,13 @@ process in this application anymore.
 - Composer 2
 - Node 20+ and npm
 - MySQL 8+
-- Network access to the company's AI HTTP endpoint (`AI_API_URL`) to use
-  the chat feature
+- Network access to the company's AI HTTP endpoint (`AI_API_URL`) for the
+  web `/chat` pipeline
+- Network access to an Ollama server (`OLLAMA_BASE_URL`) for the
+  `/api/chat` data pipeline
+- `php artisan schedule:work` (dev) or a system cron entry calling
+  `php artisan schedule:run` every minute (production), to actually run
+  the `sources:sync` job every 10 minutes
 
 ## Setup
 
@@ -51,8 +64,9 @@ Vite dev server together. Visit `http://localhost:8000`.
 
 ## Documentation
 
-- [`docs/architecture.md`](docs/architecture.md) — Clean Architecture layering and the current AI-client-only design
-- [`docs/ai-client.md`](docs/ai-client.md) — the company AI HTTP endpoint's request/response shape and every class in the chat pipeline
+- [`docs/architecture.md`](docs/architecture.md) — Clean Architecture layering and how both chat pipelines fit together
+- [`docs/ai-client.md`](docs/ai-client.md) — the web `/chat` pipeline: company AI HTTP endpoint request/response shape and every class
+- [`docs/data-pipeline-api.md`](docs/data-pipeline-api.md) — the `/api/chat` pipeline: Excel sync, structured data, direct Ollama calls, and every class
 - [`docs/development.md`](docs/development.md) — local dev workflow, tooling, and how to run checks
 - [`docs/project-roadmap.md`](docs/project-roadmap.md) — milestone plan and history from Phase 1 onward
 
