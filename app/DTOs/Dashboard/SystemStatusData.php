@@ -19,8 +19,7 @@ use App\ValueObjects\ConnectionStatus;
 final readonly class SystemStatusData
 {
     public function __construct(
-        public ConnectionStatus $sharePoint,
-        public ConnectionStatus $ollama,
+        public ConnectionStatus $aiService,
         public ConnectionStatus $database,
         public ConnectionStatus $authentication,
     ) {}

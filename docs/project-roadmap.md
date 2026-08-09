@@ -17,12 +17,10 @@ functionality.
 | P1.8 | Docs: README, architecture.md, development.md, project-roadmap.md (this file) |
 | P1.9 | Final validation (Pint, PHPStan, Pest) and a single Phase 1 commit |
 
-## Phase 2 — Local Ollama chatbot (complete)
+## Phase 2 — Local Ollama chatbot (complete, later superseded)
 
-A complete, working chat feature against a local Ollama server - no
-SharePoint yet, no document retrieval. See
-[`ollama-api.md`](ollama-api.md) for the full pipeline and class-by-class
-explanation.
+A complete, working chat feature against a locally-run Ollama server - no
+SharePoint yet, no document retrieval.
 
 | Task | Description |
 |---|---|
@@ -35,53 +33,62 @@ explanation.
 | P2.7 | Unit and feature tests, Ollama fully mocked via `Http::fake()` |
 | P2.8 | Docs (`ollama-api.md`, this file), final validation, a single Phase 2 commit |
 
-## Phase 3 — SharePoint Excel sync (complete)
+`OllamaClient` and its direct-to-Ollama design were removed in the
+"Company AI endpoint" refactor below. Everything else from this
+phase - `LLMClient`, `ChatService`, `ChatAction`, `ChatController`, the
+Blade UI - is unchanged and still in production use today.
 
-**Architecture change from the original Phase 1/2 plan**: SharePoint is
-now treated as a structured Excel data source that syncs into MySQL on a
-daily schedule, not a generic document store queried per chat request.
-See [`sharepoint.md`](sharepoint.md) for the full pipeline and
-class-by-class explanation.
+## Phase 3 — SharePoint Excel sync (complete, later removed)
+
+**Architecture change from the original Phase 1/2 plan**: SharePoint was
+reframed as a structured Excel data source synced into MySQL on a
+schedule, not a generic document store queried per chat request. Went
+through three rounds: the initial sync pipeline, a config-only rework
+(dynamic Site ID/Drive ID resolution, no hardcoded IDs), and a diagnostics
+pass (`sharepoint:test`) while investigating a real tenant's admin-consent
+requirement.
 
 | Task | Description |
 |---|---|
-| P3.1 | `config/sharepoint.php` folder path, `synced_documents` migration, `SyncedDocument` model, `SyncStatus` enum |
+| P3.1 | `config/sharepoint.php`, `synced_documents` migration, `SyncedDocument` model, `SyncStatus` enum |
 | P3.2 | `SharePointExcelFile`/`SyncResult` DTOs, `ExcelFileProvider` contract, `SharePointException` |
 | P3.3 | `MicrosoftGraphClient` (client-credentials auth, retries, healthCheck/listChildren/getItemMetadata/downloadContent) and `SharePointExcelService` (Excel filtering, DTOs, logging) |
-| P3.4 | `SyncedDocumentRepository`, `SyncSharePointExcelFilesAction` (change detection, download, store), `sharepoint:sync-excel` console command + daily schedule, container binding |
+| P3.4 | `SyncedDocumentRepository`, `SyncSharePointExcelFilesAction` (change detection, download, store), `sharepoint:sync-excel` console command + schedule, container binding |
 | P3.5 | Unit and feature tests, Graph fully mocked via `Http::fake()` |
-| P3.6 | Docs (`sharepoint.md`, this file), final validation, a single Phase 3 commit |
-| P3.7 | Config-only placeholder rework: `site_url`/`document_library`/`excel_folder`/`sync_schedule` replace hardcoded `site_id`/`drive_id`, dynamic Site ID/Drive ID resolution in `MicrosoftGraphClient`, `healthCheck()` returns `ConnectionStatus` (`NotConfigured` when `SHAREPOINT_SITE_URL` is empty, never throws), `sharepoint:test` diagnostic command, dashboard's SharePoint card wired to real `healthCheck()`, `docs/sharepoint-setup.md` runbook |
+| P3.6 | Docs, final validation, a single Phase 3 commit |
+| P3.7 | Config-only placeholder rework: `site_url`/`document_library`/`excel_folder`/`sync_schedule` replace hardcoded `site_id`/`drive_id`, dynamic Site ID/Drive ID resolution, `healthCheck()` returns `ConnectionStatus`, `sharepoint:test` diagnostic command |
+| P3.8 | Diagnostics deepened: full untruncated Graph response capture, JWT claim decoding, used to confirm a real tenant's `roles` claim was empty pending admin consent |
 
-Explicitly out of scope for Phase 3, per standing instruction: AI, RAG,
-embeddings, vector databases, PDF/Word parsing. Excel is the only
-supported file type, and its *contents* aren't read yet - only raw file
-bytes and metadata (name, SharePoint ID, modified date, sync status,
-checksum) are synced.
+**All of this was removed** in the "Company AI endpoint" refactor below -
+IT now owns SharePoint, Excel sync, and data ingestion entirely, behind
+their own HTTP endpoint. Every class, config, migration, and test from
+this phase was deleted; nothing about it remains in the running
+application. Preserved here, and in git history, for context only.
 
-## Beyond Phase 3
+## Company AI endpoint refactor (complete)
 
-1. **Excel Parser** — reads the raw `.xlsx` files already synced to
-   `storage/app/private/sharepoint-excel/`, using each `SyncedDocument`
-   row to know which files are current.
-2. **Database Import** — writes parsed spreadsheet rows into their own
-   MySQL tables, separate from `synced_documents` (which only tracks
-   file-level sync state, not row-level content).
-3. **Data Normalization** — shapes the imported data into a consistent,
-   queryable structure across whatever Excel formats/columns the source
-   files use.
-4. **Phase 5: chatbot connects to MySQL** — `ChatService` gains a
-   data-lookup step ahead of prompt building, querying the normalized
-   tables from Phase 4 instead of calling SharePoint directly per chat
-   request. This is a departure from the original Phase 1/2 "SharePoint →
-   Ollama per request, no caching" plan, superseded by the sync-based
-   architecture adopted in Phase 3.
-5. **Ollama's dashboard card goes live** — SharePoint's card already uses
-   real `healthCheck()` (P3.7); `GetSystemStatusAction` still needs to
-   swap Ollama's hardcoded value for `OllamaClient::isHealthy()`.
+**Laravel is now only an AI client.** The company IT department took
+ownership of SharePoint, Excel synchronization, data ingestion, and the
+AI model (including Ollama) entirely, exposing one HTTP endpoint. See
+[`ai-client.md`](ai-client.md) for the full pipeline and class-by-class
+explanation.
 
-Explicitly out of scope, per standing architectural decision: RAG,
-embeddings, vector databases, Azure AI Search, local document indexing,
-queues, and background jobs. The pipeline is kept modular enough that
-these *could* be added later without changing established public shapes,
-but none are planned.
+| Task | Description |
+|---|---|
+| R.1 | Removed the entire SharePoint stack: services, contract, exception, DTOs, Action, repository, model, enum, both console commands, config, migration (rolled back cleanly), tests, docs |
+| R.2 | Removed `OllamaClient`/`OllamaUnavailableException`/`config/ollama.php`. Added `AIClient` (implements the existing `LLMClient` contract unchanged), `AIServiceUnavailableException`, `config/ai.php` |
+| R.3 | `AppServiceProvider`: `LLMClient` → `AIClient`. Dashboard collapsed from 4 status cards (SharePoint/Ollama/Database/Authentication) to 3 (AI Service/Database/Authentication) - `SystemStatusData`, `GetSystemStatusAction`, `dashboard.blade.php` |
+| R.4 | Updated/added tests: new `AIClientTest`, `ChatTest` repointed at the new request/response shape, `GetSystemStatusActionTest`/`SystemStatusDataTest`/`DashboardTest` updated for the 3-card layout |
+| R.5 | Docs (`ai-client.md` replaces `ollama-api.md`; `sharepoint.md`/`sharepoint-setup.md` deleted), `architecture.md`/this file rewritten, final validation, a single commit |
+
+The chat pipeline itself - `ChatService`, `ChatAction`, `ChatController`,
+the Blade UI - needed **zero changes**: it already depended on the
+`LLMClient` interface, not `OllamaClient` concretely, so swapping the
+bound implementation was the entire fix. This is the payoff of the
+Dependency Inversion seam established back in Phase 2.
+
+## What's next
+
+Nothing is currently planned beyond this refactor. Any future data
+ingestion, RAG, or document-retrieval work belongs to the company AI
+service, not this Laravel application.

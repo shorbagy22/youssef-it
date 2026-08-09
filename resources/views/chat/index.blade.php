@@ -124,9 +124,9 @@
                         }
 
                         // Streaming placeholder: the backend currently returns
-                        // one full response. When Ollama's streaming API is
-                        // wired up later, incremental chunks would be appended
-                        // to this message's content here instead of a single
+                        // one full response. If the AI service ever supports
+                        // streaming, incremental chunks would be appended to
+                        // this message's content here instead of a single
                         // push of the finished answer.
                         this.messages.push({ role: 'assistant', content: data.answer });
                     } catch (e) {

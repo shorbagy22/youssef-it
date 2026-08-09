@@ -8,9 +8,7 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 |
 | App-wide settings for the chatbot feature itself, as distinct from the
-| SharePoint (config/sharepoint.php) and Ollama (config/ollama.php)
-| integration configs. Nothing in the application reads these yet - chat,
-| SharePoint, and Ollama are all later milestones.
+| AI service integration config (config/ai.php).
 |
 */
 

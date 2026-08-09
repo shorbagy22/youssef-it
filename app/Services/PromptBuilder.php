@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Services;
 
 /**
- * Builds the two pieces of text sent to Ollama for each chat request: the
- * system prompt (the assistant's persona and behavior rules) and the user
- * prompt (conversation history flattened into a single block of text,
- * ending with the current question).
+ * Builds the two pieces of text sent to the AI service for each chat
+ * request: the system prompt (the assistant's persona and behavior
+ * rules) and the user prompt (conversation history flattened into a
+ * single block of text, ending with the current question).
  *
  * Pure string composition - no I/O, no config access, no knowledge of
- * HTTP or Ollama's request format. That keeps it trivial to unit test and
- * safe to reuse if the LLM client ever changes.
+ * HTTP or the AI service's request format. That keeps it trivial to unit
+ * test and safe to reuse if the LLM client ever changes.
  */
 final class PromptBuilder
 {
@@ -20,11 +20,10 @@ final class PromptBuilder
      * Build the system prompt describing who the assistant is and how it
      * should behave.
      *
-     * @param  string|null  $context  Reserved for future retrieval-augmented
-     *                                generation: once SharePoint document retrieval exists, the
-     *                                extracted, relevant document text will be passed here and
-     *                                appended as grounding context. Always null today - Phase 2
-     *                                has no document retrieval, per the standing "no RAG" rule.
+     * @param  string|null  $context  Reserved grounding-context seam, unused
+     *                                today. Data ingestion and any retrieval-augmented generation
+     *                                are owned entirely by the company's AI service now - Laravel
+     *                                has no document store of its own to pass context from.
      */
     public function buildSystemPrompt(?string $context = null): string
     {

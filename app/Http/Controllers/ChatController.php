@@ -6,7 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\ChatAction;
 use App\DTOs\ChatRequest;
-use App\Exceptions\OllamaUnavailableException;
+use App\Exceptions\AIServiceUnavailableException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +16,7 @@ use Illuminate\Http\Request;
  *
  * Kept thin per Clean Architecture: send() only validates input, builds a
  * ChatRequest, calls ChatAction, and translates the result (or an
- * OllamaUnavailableException) into a JSON response - no business logic
+ * AIServiceUnavailableException) into a JSON response - no business logic
  * lives here.
  */
 final class ChatController extends Controller
@@ -52,9 +52,9 @@ final class ChatController extends Controller
 
         try {
             $response = $this->chatAction->handle($chatRequest);
-        } catch (OllamaUnavailableException) {
+        } catch (AIServiceUnavailableException) {
             return response()->json([
-                'error' => 'Ollama is currently unavailable. Please try again shortly.',
+                'error' => 'The AI service is currently unavailable. Please try again shortly.',
             ], 503);
         }
 

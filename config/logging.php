@@ -125,11 +125,10 @@ return [
             'handler' => NullHandler::class,
         ],
 
-        // Dedicated channel for the chatbot pipeline (SharePoint retrieval,
-        // document extraction, prompt building, Ollama calls) - kept
-        // separate from Laravel's general "stack" channel so chatbot
-        // activity can be inspected/rotated independently. Referenced by
-        // config('chatbot.log_channel').
+        // Dedicated channel for the chatbot pipeline (prompt building, AI
+        // service calls) - kept separate from Laravel's general "stack"
+        // channel so chatbot activity can be inspected/rotated
+        // independently. Referenced by config('chatbot.log_channel').
         'chatbot' => [
             'driver' => 'daily',
             'path' => storage_path('logs/chatbot.log'),

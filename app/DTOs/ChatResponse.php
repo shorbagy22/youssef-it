@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace App\DTOs;
 
 /**
- * The model's answer to a ChatRequest.
+ * The AI service's answer to a ChatRequest.
  *
- * Deliberately just an answer for now - no "sources" field, since Phase 2
- * has no document retrieval to attribute answers to. That field can be
- * added here additively once SharePoint retrieval lands, without any
- * other layer needing to change.
+ * Deliberately just an answer - Laravel has no document retrieval of its
+ * own to attribute answers to; the company's AI service owns data
+ * ingestion and grounding entirely.
  */
 final readonly class ChatResponse
 {

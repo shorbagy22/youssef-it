@@ -6,7 +6,7 @@ namespace App\Actions;
 
 use App\DTOs\ChatRequest;
 use App\DTOs\ChatResponse;
-use App\Exceptions\OllamaUnavailableException;
+use App\Exceptions\AIServiceUnavailableException;
 use App\Services\ChatService;
 
 /**
@@ -25,7 +25,7 @@ final class ChatAction
     ) {}
 
     /**
-     * @throws OllamaUnavailableException
+     * @throws AIServiceUnavailableException
      */
     public function handle(ChatRequest $request): ChatResponse
     {

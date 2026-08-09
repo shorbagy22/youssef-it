@@ -3,28 +3,27 @@
 declare(strict_types=1);
 
 use App\Actions\Dashboard\GetSystemStatusAction;
-use App\Contracts\ExcelFileProvider;
+use App\Contracts\LLMClient;
 use App\DTOs\Dashboard\SystemStatusData;
 use App\ValueObjects\ConnectionStatus;
 
-test('it reflects the real SharePoint status alongside the still-fake values', function () {
-    $excelFiles = Mockery::mock(ExcelFileProvider::class);
-    $excelFiles->shouldReceive('healthCheck')->once()->andReturn(ConnectionStatus::Connected);
+test('it reflects the real AI service status alongside the still-fake values', function () {
+    $llmClient = Mockery::mock(LLMClient::class);
+    $llmClient->shouldReceive('isHealthy')->once()->andReturn(true);
 
-    $status = (new GetSystemStatusAction($excelFiles))->handle();
+    $status = (new GetSystemStatusAction($llmClient))->handle();
 
     expect($status)->toBeInstanceOf(SystemStatusData::class)
-        ->and($status->sharePoint)->toBe(ConnectionStatus::Connected)
-        ->and($status->ollama)->toBe(ConnectionStatus::NotConfigured)
+        ->and($status->aiService)->toBe(ConnectionStatus::Connected)
         ->and($status->database)->toBe(ConnectionStatus::Connected)
         ->and($status->authentication)->toBe(ConnectionStatus::Connected);
 });
 
-test('it shows NotConfigured for SharePoint when it is not set up', function () {
-    $excelFiles = Mockery::mock(ExcelFileProvider::class);
-    $excelFiles->shouldReceive('healthCheck')->once()->andReturn(ConnectionStatus::NotConfigured);
+test('it shows Disconnected for the AI service when it is unreachable', function () {
+    $llmClient = Mockery::mock(LLMClient::class);
+    $llmClient->shouldReceive('isHealthy')->once()->andReturn(false);
 
-    $status = (new GetSystemStatusAction($excelFiles))->handle();
+    $status = (new GetSystemStatusAction($llmClient))->handle();
 
-    expect($status->sharePoint)->toBe(ConnectionStatus::NotConfigured);
+    expect($status->aiService)->toBe(ConnectionStatus::Disconnected);
 });

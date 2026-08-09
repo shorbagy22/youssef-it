@@ -19,9 +19,9 @@ test('authenticated users can view the chat page', function () {
     $this->actingAs($user)->get('/chat')->assertOk();
 });
 
-test('sending a message returns the answer from Ollama', function () {
+test('sending a message returns the answer from the AI service', function () {
     Http::fake([
-        'localhost:11434/api/generate' => Http::response(['response' => 'Hi! How can I help?'], 200),
+        'ai-service.test/*' => Http::response(['answer' => 'Hi! How can I help?'], 200),
     ]);
 
     $user = User::factory()->create();
@@ -32,9 +32,9 @@ test('sending a message returns the answer from Ollama', function () {
         ->assertJson(['answer' => 'Hi! How can I help?']);
 });
 
-test('sending a message includes prior history in the prompt sent to Ollama', function () {
+test('sending a message includes prior history in the prompt sent to the AI service', function () {
     Http::fake([
-        'localhost:11434/api/generate' => Http::response(['response' => 'Sure.'], 200),
+        'ai-service.test/*' => Http::response(['answer' => 'Sure.'], 200),
     ]);
 
     $user = User::factory()->create();
@@ -48,15 +48,15 @@ test('sending a message includes prior history in the prompt sent to Ollama', fu
     ])->assertOk();
 
     Http::assertSent(function ($request) {
-        return str_contains($request['prompt'], 'User: What is the capital of France?')
-            && str_contains($request['prompt'], 'Assistant: Paris.')
-            && str_contains($request['prompt'], 'User: And after that?');
+        return str_contains($request['question'], 'User: What is the capital of France?')
+            && str_contains($request['question'], 'Assistant: Paris.')
+            && str_contains($request['question'], 'User: And after that?');
     });
 });
 
-test('it returns 503 when Ollama is unavailable', function () {
+test('it returns 503 when the AI service is unavailable', function () {
     Http::fake([
-        'localhost:11434/api/generate' => Http::response('Service Unavailable', 500),
+        'ai-service.test/*' => Http::response('Service Unavailable', 500),
     ]);
 
     $user = User::factory()->create();

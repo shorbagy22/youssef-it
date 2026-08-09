@@ -7,13 +7,13 @@ namespace App\Services;
 use App\Contracts\LLMClient;
 use App\DTOs\ChatRequest;
 use App\DTOs\ChatResponse;
-use App\Exceptions\OllamaUnavailableException;
+use App\Exceptions\AIServiceUnavailableException;
 
 /**
  * Turns a ChatRequest into a ChatResponse: business logic only, no HTTP,
  * no controllers. Depends on the LLMClient contract rather than
- * OllamaClient directly, so it never needs to know it's Ollama on the
- * other end.
+ * AIClient directly, so it never needs to know it's talking to the
+ * company's AI HTTP endpoint on the other end.
  *
  * Deliberately separate from ChatAction so this logic is reusable from
  * any future entry point (a queued job, an artisan command) without
@@ -27,10 +27,10 @@ final class ChatService
     ) {}
 
     /**
-     * @throws OllamaUnavailableException if the model server is unreachable
-     *                                    or fails to respond successfully. Left uncaught here since
-     *                                    it's already a domain-level exception - the HTTP layer
-     *                                    (ChatController) decides what status code that becomes.
+     * @throws AIServiceUnavailableException if the AI service is unreachable
+     *                                       or fails to respond successfully. Left uncaught here since
+     *                                       it's already a domain-level exception - the HTTP layer
+     *                                       (ChatController) decides what status code that becomes.
      */
     public function handle(ChatRequest $request): ChatResponse
     {

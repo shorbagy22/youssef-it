@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 
 test('guests are redirected to login', function () {
     $response = $this->get('/dashboard');
@@ -11,6 +12,10 @@ test('guests are redirected to login', function () {
 });
 
 test('authenticated users can view the dashboard', function () {
+    Http::fake([
+        'ai-service.test/health' => Http::response('OK', 200),
+    ]);
+
     $user = User::factory()->create();
 
     $response = $this
@@ -19,10 +24,21 @@ test('authenticated users can view the dashboard', function () {
 
     $response
         ->assertOk()
-        ->assertSeeText('SharePoint')
-        ->assertSeeText('Ollama')
+        ->assertSeeText('AI Service')
         ->assertSeeText('Database')
         ->assertSeeText('Authentication')
-        ->assertSeeText('Not Configured')
         ->assertSeeText('Connected');
+});
+
+test('the dashboard shows the AI service as disconnected when its health check fails', function () {
+    Http::fake([
+        'ai-service.test/health' => Http::response('Service Unavailable', 503),
+    ]);
+
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertSeeText('Disconnected');
 });

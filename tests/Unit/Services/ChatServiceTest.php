@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use App\Contracts\LLMClient;
 use App\DTOs\ChatRequest;
-use App\Exceptions\OllamaUnavailableException;
+use App\Exceptions\AIServiceUnavailableException;
 use App\Services\ChatService;
 use App\Services\PromptBuilder;
 
@@ -25,14 +25,14 @@ test('it builds prompts via PromptBuilder and returns the model answer', functio
     expect($response->answer)->toBe('All good!');
 });
 
-test('it lets OllamaUnavailableException from the LLM client bubble up', function () {
+test('it lets AIServiceUnavailableException from the LLM client bubble up', function () {
     $llmClient = Mockery::mock(LLMClient::class);
     $llmClient->shouldReceive('generate')
         ->once()
-        ->andThrow(new OllamaUnavailableException('down'));
+        ->andThrow(new AIServiceUnavailableException('down'));
 
     $service = new ChatService($llmClient, new PromptBuilder);
 
     expect(fn () => $service->handle(new ChatRequest(message: 'Hi')))
-        ->toThrow(OllamaUnavailableException::class);
+        ->toThrow(AIServiceUnavailableException::class);
 });

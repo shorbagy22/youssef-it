@@ -1,4 +1,4 @@
 Small, framework-agnostic helper classes that don't belong to any other
-layer (e.g. PromptBuilder - pure string composition, no I/O, no external
-system). Kept deliberately minimal, not a dumping ground. Populated
-starting with the SharePoint/Ollama integration milestone.
+layer. Kept deliberately minimal, not a dumping ground. Still empty -
+nothing built so far has needed it (PromptBuilder, the one candidate,
+ended up in app/Services instead - see docs/architecture.md).

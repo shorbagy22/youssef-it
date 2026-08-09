@@ -15,8 +15,7 @@
 
             <h2 class="fs-6 text-secondary text-uppercase fw-semibold mb-3">{{ __('System Status') }}</h2>
             <div class="row g-3">
-                <x-status-card label="SharePoint" :status="$systemStatus->sharePoint" />
-                <x-status-card label="Ollama" :status="$systemStatus->ollama" />
+                <x-status-card label="AI Service" :status="$systemStatus->aiService" />
                 <x-status-card label="Database" :status="$systemStatus->database" />
                 <x-status-card label="Authentication" :status="$systemStatus->authentication" />
             </div>
