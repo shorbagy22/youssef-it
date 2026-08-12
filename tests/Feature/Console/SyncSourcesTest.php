@@ -3,15 +3,17 @@
 declare(strict_types=1);
 
 use App\Models\DataRecord;
+use App\Models\Department;
 use App\Models\Source;
 
 test('it syncs every source and reports a summary', function () {
     $path = writeTestExcelFile([
+        ['date', 'nrft', 'ppm', 'defects'],
         ['2026-05-01', 95.5, 120, 'scratch'],
     ]);
 
     Source::factory()->create([
-        'department' => 'quality',
+        'department_id' => Department::where('slug', 'quality')->value('id'),
         'name' => 'Quality Report',
         'type' => 'file',
         'file_path' => $path,
@@ -45,6 +47,7 @@ test('it continues past a source with a missing file and reports the failure', f
 
 test('a failing source does not stop the rest of the sources from syncing', function () {
     $path = writeTestExcelFile([
+        ['date', 'nrft', 'ppm', 'defects'],
         ['2026-05-01', 95.5, 120, 'scratch'],
     ]);
 
@@ -54,7 +57,7 @@ test('a failing source does not stop the rest of the sources from syncing', func
         'file_path' => 'D:\\data\\missing\\report.xlsx',
     ]);
     Source::factory()->create([
-        'department' => 'quality',
+        'department_id' => Department::where('slug', 'quality')->value('id'),
         'name' => 'Good Source',
         'type' => 'file',
         'file_path' => $path,

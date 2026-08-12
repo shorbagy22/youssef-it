@@ -11,7 +11,7 @@ test('buildPrompt notes when no data records are available', function () {
     $prompt = $service->buildPrompt(collect(), 'What is NRFT?');
 
     expect($prompt)->toContain('No data records are available for this department yet.')
-        ->and($prompt)->toContain('Question: What is NRFT?');
+        ->and($prompt)->toContain("Question:\nWhat is NRFT?");
 });
 
 test('buildPrompt includes date, nrft, ppm, and defects for each record', function () {
@@ -27,11 +27,11 @@ test('buildPrompt includes date, nrft, ppm, and defects for each record', functi
 
     $prompt = $service->buildPrompt(collect([$record]), 'What is NRFT in May?');
 
-    expect($prompt)->toContain('2026-05-01')
-        ->and($prompt)->toContain('NRFT=95.50')
-        ->and($prompt)->toContain('PPM=120.00')
-        ->and($prompt)->toContain('Defects=scratch, dent')
-        ->and($prompt)->toContain('Question: What is NRFT in May?');
+    expect($prompt)->toContain('Date: 2026-05-01')
+        ->and($prompt)->toContain('NRFT: 95.50')
+        ->and($prompt)->toContain('PPM: 120.00')
+        ->and($prompt)->toContain('Defects: scratch, dent')
+        ->and($prompt)->toContain("Question:\nWhat is NRFT in May?");
 });
 
 test('buildPrompt shows "none" for a record with no defects', function () {
@@ -47,5 +47,5 @@ test('buildPrompt shows "none" for a record with no defects', function () {
 
     $prompt = $service->buildPrompt(collect([$record]), 'Any defects?');
 
-    expect($prompt)->toContain('Defects=none');
+    expect($prompt)->toContain('Defects: none');
 });

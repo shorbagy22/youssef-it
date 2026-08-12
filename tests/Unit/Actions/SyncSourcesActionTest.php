@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\SyncSourcesAction;
 use App\Models\DataRecord;
+use App\Models\Department;
 use App\Models\Source;
 use Illuminate\Support\Facades\Http;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -40,12 +41,13 @@ afterEach(function () {
 
 test('sync parses a local Excel file into data_records', function () {
     $path = writeTestExcelFile([
+        ['date', 'nrft', 'ppm', 'defects'],
         ['2026-05-01', 95.5, 120, 'scratch,dent'],
         ['2026-05-02', 97.0, 80, ''],
     ]);
 
     $source = Source::factory()->create([
-        'department' => 'quality',
+        'department_id' => Department::where('slug', 'quality')->value('id'),
         'type' => 'file',
         'file_path' => $path,
         'url' => null,
@@ -72,11 +74,12 @@ test('sync parses a local Excel file into data_records', function () {
 
 test('sync upserts by department and date on a second run', function () {
     $path = writeTestExcelFile([
+        ['date', 'nrft', 'ppm', 'defects'],
         ['2026-05-01', 95.5, 120, 'scratch'],
     ]);
 
     $source = Source::factory()->create([
-        'department' => 'quality',
+        'department_id' => Department::where('slug', 'quality')->value('id'),
         'type' => 'file',
         'file_path' => $path,
     ]);
@@ -92,12 +95,13 @@ test('sync upserts by department and date on a second run', function () {
 
 test('sync skips blank rows', function () {
     $path = writeTestExcelFile([
+        ['date', 'nrft', 'ppm', 'defects'],
         ['2026-05-01', 95.5, 120, 'scratch'],
         ['', '', '', ''],
     ]);
 
     $source = Source::factory()->create([
-        'department' => 'quality',
+        'department_id' => Department::where('slug', 'quality')->value('id'),
         'type' => 'file',
         'file_path' => $path,
     ]);
@@ -124,6 +128,7 @@ test('sync throws when the local file does not exist', function () {
 
 test('sync downloads and parses a url-type source, then removes the temp file', function () {
     $path = writeTestExcelFile([
+        ['date', 'nrft', 'ppm', 'defects'],
         ['2026-05-01', 95.5, 120, 'scratch'],
     ]);
     $bytes = file_get_contents($path);
@@ -134,7 +139,7 @@ test('sync downloads and parses a url-type source, then removes the temp file', 
     ]);
 
     $source = Source::factory()->url()->create([
-        'department' => 'safety',
+        'department_id' => Department::where('slug', 'safety')->value('id'),
         'url' => 'https://example.test/report.xlsx',
     ]);
 

@@ -49,18 +49,18 @@ final class SyncSources extends Command
         foreach ($sources as $source) {
             try {
                 $count = $this->action->sync($source);
-                $this->info("  [{$source->department}] {$source->name}: {$count} record(s) synced.");
+                $this->info("  [{$source->department->slug}] {$source->name}: {$count} record(s) synced.");
             } catch (Throwable $e) {
                 $failed++;
 
                 Log::channel((string) config('chatbot.log_channel'))->error('Source sync failed', [
                     'source_id' => $source->id,
-                    'department' => $source->department,
+                    'department' => $source->department->slug,
                     'name' => $source->name,
                     'error' => $e->getMessage(),
                 ]);
 
-                $this->error("  [{$source->department}] {$source->name}: FAILED - {$e->getMessage()}");
+                $this->error("  [{$source->department->slug}] {$source->name}: FAILED - {$e->getMessage()}");
             }
         }
 

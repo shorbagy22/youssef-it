@@ -7,6 +7,7 @@ namespace App\Models;
 use Database\Factories\SourceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -16,12 +17,13 @@ use Illuminate\Support\Carbon;
  * points at.
  *
  * @property int $id
- * @property string $department
+ * @property int $department_id
  * @property string $name
  * @property string $type
  * @property string|null $file_path
  * @property string|null $url
  * @property Carbon|null $last_synced_at
+ * @property-read Department $department
  */
 class Source extends Model
 {
@@ -32,7 +34,7 @@ class Source extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'department',
+        'department_id',
         'name',
         'type',
         'file_path',
@@ -48,5 +50,13 @@ class Source extends Model
         return [
             'last_synced_at' => 'datetime',
         ];
+    }
+
+    /**
+     * @return BelongsTo<Department, Source>
+     */
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 }

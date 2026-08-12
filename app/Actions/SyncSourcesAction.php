@@ -21,9 +21,9 @@ use RuntimeException;
  * is responsible for catching failures and moving on to the next source
  * - a single source's bad file never aborts the whole sync run.
  *
- * Excel column layout is fixed and positional (no header row assumed):
- * column 0 = date, column 1 = nrft, column 2 = ppm, column 3 = defects
- * (comma-separated).
+ * Excel column layout is fixed and positional: column 0 = date, column 1
+ * = nrft, column 2 = ppm, column 3 = defects (comma-separated). Row 0 is
+ * always assumed to be a header row and is skipped.
  */
 final class SyncSourcesAction
 {
@@ -44,14 +44,14 @@ final class SyncSourcesAction
 
             $count = 0;
 
-            foreach ($rows as $row) {
+            foreach ($rows->skip(1) as $row) {
                 if (blank($row[0] ?? null)) {
                     continue;
                 }
 
                 DataRecord::query()->updateOrCreate(
                     [
-                        'department' => $source->department,
+                        'department' => $source->department->slug,
                         'date' => $this->parseDate($row[0]),
                     ],
                     [

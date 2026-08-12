@@ -12,15 +12,13 @@ return new class extends Migration
     {
         Schema::create('sources', function (Blueprint $table) {
             $table->id();
-            $table->string('department');
+            $table->foreignId('department_id')->constrained()->restrictOnDelete();
             $table->string('name');
             $table->enum('type', ['file', 'url']);
             $table->string('file_path')->nullable();
             $table->string('url')->nullable();
             $table->timestamp('last_synced_at')->nullable();
             $table->timestamps();
-
-            $table->index('department');
         });
     }
 

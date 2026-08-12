@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Models\Department;
 use App\Models\Source;
-use App\ValueObjects\Department;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,7 +19,7 @@ class SourceFactory extends Factory
     public function definition(): array
     {
         return [
-            'department' => fake()->randomElement(Department::cases())->value,
+            'department_id' => Department::factory(),
             'name' => fake()->words(3, true),
             'type' => 'file',
             'file_path' => 'D:\\data\\'.fake()->word().'\\report.xlsx',

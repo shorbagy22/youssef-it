@@ -25,15 +25,14 @@ final class ChatDataService
         $context = $this->buildContext($records);
 
         return <<<PROMPT
-            You are a factory data assistant. Use only the data below to answer the
-            question. Be concise, include specific numbers from the data, and mention
-            defects if they are relevant to the question. If the data doesn't answer
-            the question, say so plainly instead of guessing.
+            You are a factory assistant.
 
-            Recent department data (most recent first):
+            Answer based ONLY on this data:
+
             {$context}
 
-            Question: {$question}
+            Question:
+            {$question}
             PROMPT;
     }
 
@@ -53,13 +52,13 @@ final class ChatDataService
                     : 'none';
 
                 return sprintf(
-                    '- %s: NRFT=%s, PPM=%s, Defects=%s',
+                    "Date: %s\nNRFT: %s\nPPM: %s\nDefects: %s",
                     $record->date->toDateString(),
                     $record->nrft ?? 'N/A',
                     $record->ppm ?? 'N/A',
                     $defects,
                 );
             })
-            ->implode("\n");
+            ->implode("\n\n");
     }
 }

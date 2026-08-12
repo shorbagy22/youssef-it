@@ -20,9 +20,12 @@ test('it creates a file-type source', function () {
         'file_path' => 'D:\\data\\quality\\report.xlsx',
     ])
         ->assertCreated()
-        ->assertJsonFragment(['department' => 'quality', 'type' => 'file']);
+        ->assertExactJson(['message' => 'Source created']);
 
     expect(Source::query()->count())->toBe(1);
+    expect(Source::query()->first())
+        ->department->slug->toBe('quality')
+        ->type->toBe('file');
 });
 
 test('it creates a url-type source', function () {
@@ -33,7 +36,9 @@ test('it creates a url-type source', function () {
         'url' => 'https://example.test/report.xlsx',
     ])
         ->assertCreated()
-        ->assertJsonFragment(['type' => 'url']);
+        ->assertExactJson(['message' => 'Source created']);
+
+    expect(Source::query()->where('type', 'url')->exists())->toBeTrue();
 });
 
 test('file_path is required when type is file', function () {

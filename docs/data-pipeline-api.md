@@ -52,7 +52,8 @@ so re-running a sync updates existing rows instead of duplicating them.
 
 ## Excel format
 
-Fixed, positional columns, no header row assumed:
+Fixed, positional columns, row 0 always assumed to be a header and
+skipped:
 
 | Column index | Meaning |
 |---|---|
@@ -64,10 +65,6 @@ Fixed, positional columns, no header row assumed:
 Dates are parsed defensively: a numeric cell is treated as an Excel date
 serial (converted via PhpSpreadsheet's date helper); anything else is
 parsed with `Carbon::parse()`. Blank rows (empty date) are skipped.
-
-**If your real files have a header row**, `SyncSourcesAction` will need a
-one-line change to skip row 0 - it currently processes every row as data,
-matching the literal "column 0/1/2/3" spec with no header mentioned.
 
 ## Sync pipeline
 
@@ -96,8 +93,10 @@ POST /api/chat {department, message}
   -> ChatController: validate department (must be a known Department) + message
   -> DataRecord::where(department)->orderByDesc(date)->limit(10)->get()
   -> ChatDataService::buildPrompt(records, message)
-       - formats each record as "- {date}: NRFT={nrft}, PPM={ppm}, Defects={defects}"
-       - wraps with instructions: be concise, include numbers, mention defects
+       - formats each record as "Date: {date}\nNRFT: {nrft}\nPPM: {ppm}\nDefects: {defects}",
+         blank line between records
+       - wraps as: "You are a factory assistant.\n\nAnswer based ONLY on this
+         data:\n\n{context}\n\nQuestion:\n{message}"
   -> OllamaClient::generate(prompt)
        -> POST {OLLAMA_BASE_URL}/api/generate {model, prompt, stream: false}
        <- {"response": "..."}
@@ -147,6 +146,9 @@ curl -X POST http://localhost:8000/api/sources \
   }'
 ```
 
+Response: `{"message": "Source created"}` (201) - `store()` returns a plain
+confirmation, not the created record.
+
 **Register a url-type source:**
 
 ```bash
@@ -188,6 +190,21 @@ Response:
 ```json
 {"answer": "NRFT in May was 95.5%, based on the most recent data available."}
 ```
+
+## Public UI
+
+Two unauthenticated Blade pages sit in front of this pipeline, separate
+from the authenticated `/dashboard` and `/chat` (web `/chat` pipeline)
+routes:
+
+- `GET /` (`resources/views/public-dashboard.blade.php`) - four
+  department buttons linking to `/chat/{department}`.
+- `GET /chat/{department}` (`resources/views/chat.blade.php`) - a chat
+  page for that department; 404s for anything not in `App\ValueObjects\Department`.
+  Plain JS `fetch()` posts to `POST /api/chat` and renders the answer as
+  a chat bubble, with a loading state and an "Error getting response"
+  bubble on failure. No build step, no framework - inline `<script>` in
+  the Blade file.
 
 ## Testing
 

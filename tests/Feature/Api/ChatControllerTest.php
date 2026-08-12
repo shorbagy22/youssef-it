@@ -39,8 +39,8 @@ test('it only includes the requested department\'s records', function () {
         ->assertOk();
 
     Http::assertSent(function ($request) {
-        return str_contains($request['prompt'], 'NRFT=22.22')
-            && ! str_contains($request['prompt'], 'NRFT=11.11');
+        return str_contains($request['prompt'], 'NRFT: 22.22')
+            && ! str_contains($request['prompt'], 'NRFT: 11.11');
     });
 });
 
