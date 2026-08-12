@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\DataRecord;
+use App\Models\Department;
 use Illuminate\Support\Facades\Http;
 
 test('it answers using the department\'s recent data records', function () {
@@ -56,6 +57,19 @@ test('department must be one of the known values', function () {
     $this->postJson('/api/chat', ['department' => 'finance', 'message' => 'Hello'])
         ->assertStatus(422)
         ->assertJsonValidationErrors('department');
+});
+
+test('it accepts an admin-managed department', function () {
+    Department::factory()->create(['slug' => 'finance']);
+    DataRecord::factory()->create(['department' => 'finance', 'nrft' => 88.5]);
+
+    Http::fake(['ollama.test/*' => Http::response(['response' => 'Finance is healthy.'], 200)]);
+
+    $this->postJson('/api/chat', ['department' => 'finance', 'message' => 'Status?'])
+        ->assertOk()
+        ->assertJson(['answer' => 'Finance is healthy.']);
+
+    Http::assertSent(fn ($request) => str_contains($request['prompt'], 'NRFT: 88.50'));
 });
 
 test('message is required', function () {

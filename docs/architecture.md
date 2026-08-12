@@ -62,7 +62,8 @@ Controller → Action → Contracts → Services → External Systems
   between layers (e.g. `SystemStatusData`, `ChatRequest`, `ChatResponse`)
   so callers depend on a stable shape instead of raw arrays.
 - **ValueObjects** (`app/ValueObjects`) are small, self-validating types —
-  `ConnectionStatus` and `Department` (the fixed four-department enum).
+  `ConnectionStatus` and the legacy `Department` enum used to seed the four
+  initial database departments.
 - **Exceptions** (`app/Exceptions`) are meaningfully-named custom
   exceptions so calling code can catch specific failure modes (e.g.
   `AIServiceUnavailableException`, reused by both `AIClient` and

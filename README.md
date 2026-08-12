@@ -25,9 +25,9 @@ No SharePoint API integration or Microsoft Graph in either pipeline - see
 
 ## Requirements
 
-- PHP 8.3+
+- PHP 8.4.1 through 8.4.x (the current lockfile's supported range)
 - Composer 2
-- Node 20+ and npm
+- Node 22.20+ and npm
 - MySQL 8+
 - Network access to the company's AI HTTP endpoint (`AI_API_URL`) for the
   web `/chat` pipeline
@@ -41,7 +41,7 @@ No SharePoint API integration or Microsoft Graph in either pipeline - see
 
 ```bash
 composer install
-npm install
+npm ci
 cp .env.example .env
 php artisan key:generate
 ```

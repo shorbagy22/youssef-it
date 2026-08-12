@@ -13,12 +13,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * An admin-managed department: owns Sources and has its own public chat
  * page at /chat/{slug}. Manageable from /admin/departments.
  *
- * This is deliberately separate from the fixed ValueObjects\Department
- * enum, which /api/chat and data_records still key off - this table is
- * the dynamic side of "departments" (Sources, the public dashboard, and
- * /chat/{slug} page rendering); the enum remains the static side (the AI
- * chat API and its data pipeline), seeded here with matching slugs so the
- * two stay aligned for the four departments both sides know about.
+ * The table is the single source of truth for source registration, public
+ * pages, and /api/chat validation. The legacy value-object enum is used
+ * only to seed the application's four initial departments.
  *
  * @property int $id
  * @property string $name
@@ -38,7 +35,7 @@ class Department extends Model
     ];
 
     /**
-     * @return HasMany<Source>
+     * @return HasMany<Source, $this>
      */
     public function sources(): HasMany
     {

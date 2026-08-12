@@ -17,10 +17,9 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          # Tested against the floor of composer.json's "php": "^8.3"
-          # constraint, not whatever happens to be on a dev machine.
-          php-version: '8.3'
-          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, curl
+          # The exact lockfile currently requires PHP >=8.4.1 and <8.5.
+          php-version: '8.4'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, curl, zip
           coverage: none
           tools: composer:v2
 
@@ -37,7 +36,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
 
       - name: Install npm dependencies

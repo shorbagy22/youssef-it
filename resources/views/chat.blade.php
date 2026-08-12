@@ -7,6 +7,18 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: #f4f5f7;
@@ -139,9 +151,10 @@
             <h1>{{ $department }}</h1>
             <a href="{{ route('public.dashboard') }}">&larr; Dashboard</a>
         </header>
-        <div id="messages"></div>
+        <div id="messages" aria-live="polite"></div>
         <form id="chat-form">
-            <input type="text" id="message-input" placeholder="Ask a question..." autocomplete="off">
+            <label for="message-input" class="visually-hidden">Question</label>
+            <input type="text" id="message-input" placeholder="Ask a question..." autocomplete="off" maxlength="2000" required>
             <button type="submit">Send</button>
         </form>
     </div>
@@ -151,6 +164,7 @@
         const messagesEl = document.getElementById('messages');
         const form = document.getElementById('chat-form');
         const input = document.getElementById('message-input');
+        const chatUrl = @json(route('api.chat', absolute: false));
 
         function addBubble(text, className) {
             const bubble = document.createElement('div');
@@ -177,7 +191,7 @@
             submitButton.disabled = true;
 
             try {
-                const response = await fetch('/api/chat', {
+                const response = await fetch(chatUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -186,19 +200,27 @@
                     body: JSON.stringify({ department: department, message: message }),
                 });
 
+                const data = await response.json().catch(() => ({}));
                 loadingBubble.remove();
 
                 if (!response.ok) {
-                    addBubble('Error getting response', 'error');
-                } else {
-                    const data = await response.json();
-                    addBubble(data.answer ?? 'Error getting response', 'ai');
+                    const validationError = data.errors?.message?.[0] ?? data.errors?.department?.[0];
+                    addBubble(validationError ?? data.error ?? data.message ?? `Request failed (${response.status}).`, 'error');
+                    return;
                 }
+
+                if (typeof data.answer !== 'string' || data.answer.trim() === '') {
+                    addBubble('The AI service returned an empty response.', 'error');
+                    return;
+                }
+
+                addBubble(data.answer, 'ai');
             } catch (error) {
                 loadingBubble.remove();
-                addBubble('Error getting response', 'error');
+                addBubble('Could not reach the application server. Please try again.', 'error');
             } finally {
                 submitButton.disabled = false;
+                input.focus();
             }
         });
     </script>

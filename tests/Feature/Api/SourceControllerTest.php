@@ -3,6 +3,18 @@
 declare(strict_types=1);
 
 use App\Models\Source;
+use App\Models\User;
+
+beforeEach(function () {
+    $this->actingAs(User::factory()->create());
+});
+
+test('guests cannot inspect or create sources', function () {
+    auth()->logout();
+
+    $this->getJson('/api/sources')->assertUnauthorized();
+    $this->postJson('/api/sources', [])->assertUnauthorized();
+});
 
 test('it lists every configured source', function () {
     Source::factory()->count(2)->create();
@@ -81,4 +93,15 @@ test('type must be file or url', function () {
     ])
         ->assertStatus(422)
         ->assertJsonValidationErrors('type');
+});
+
+test('source URLs must use HTTP or HTTPS', function () {
+    $this->postJson('/api/sources', [
+        'department' => 'quality',
+        'name' => 'Report',
+        'type' => 'url',
+        'url' => 'file:///etc/passwd',
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('url');
 });

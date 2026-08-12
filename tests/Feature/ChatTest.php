@@ -87,3 +87,13 @@ test('history entries must have a valid role', function () {
         ->assertStatus(422)
         ->assertJsonValidationErrors('history.0.role');
 });
+
+test('history is limited to twenty entries', function () {
+    $user = User::factory()->create();
+    $history = array_fill(0, 21, ['role' => 'user', 'content' => 'Hello']);
+
+    $this->actingAs($user)
+        ->postJson('/chat/send', ['message' => 'Hello', 'history' => $history])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('history');
+});

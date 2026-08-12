@@ -7,9 +7,9 @@ namespace App\Http\Controllers\Api;
 use App\Exceptions\AIServiceUnavailableException;
 use App\Http\Controllers\Controller;
 use App\Models\DataRecord;
+use App\Models\Department;
 use App\Services\ChatDataService;
 use App\Services\OllamaClient;
-use App\ValueObjects\Department;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -37,7 +37,7 @@ final class ChatController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'department' => ['required', 'string', Rule::enum(Department::class)],
+            'department' => ['required', 'string', Rule::exists(Department::class, 'slug')],
             'message' => ['required', 'string', 'max:2000'],
         ]);
 

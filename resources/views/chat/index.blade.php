@@ -49,9 +49,10 @@
                 <form class="border-top p-3 d-flex gap-2" @submit.prevent="send()">
                     <textarea
                         x-model="input"
-                        @keydown.enter.prevent="if (! $event.shiftKey) send()"
+                        @keydown.enter="if (! $event.shiftKey) { $event.preventDefault(); send(); }"
                         class="form-control"
                         rows="1"
+                        maxlength="4000"
                         placeholder="{{ __('Type a message...') }}"
                         :disabled="sending"
                     ></textarea>
@@ -97,7 +98,7 @@
 
                     // Snapshot history before pushing the new message - the
                     // backend expects prior turns separately from the new one.
-                    const history = this.messages.map(({ role, content }) => ({ role, content }));
+                    const history = this.messages.slice(-20).map(({ role, content }) => ({ role, content }));
 
                     this.messages.push({ role: 'user', content: message });
                     this.input = '';
@@ -116,10 +117,16 @@
                             body: JSON.stringify({ message, history }),
                         });
 
-                        const data = await response.json();
+                        const data = await response.json().catch(() => ({}));
 
                         if (! response.ok) {
-                            this.error = data.error ?? 'Something went wrong. Please try again.';
+                            const validationError = data.errors?.message?.[0] ?? data.errors?.history?.[0];
+                            this.error = validationError ?? data.error ?? data.message ?? `Request failed (${response.status}).`;
+                            return;
+                        }
+
+                        if (typeof data.answer !== 'string' || data.answer.trim() === '') {
+                            this.error = 'The AI service returned an empty response.';
                             return;
                         }
 

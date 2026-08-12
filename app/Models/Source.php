@@ -53,7 +53,7 @@ class Source extends Model
     }
 
     /**
-     * @return BelongsTo<Department, Source>
+     * @return BelongsTo<Department, $this>
      */
     public function department(): BelongsTo
     {

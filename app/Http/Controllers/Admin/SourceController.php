@@ -42,7 +42,7 @@ final class SourceController extends Controller
             'department_id' => ['required', 'integer', Rule::exists('departments', 'id')],
             'type' => ['required', 'string', Rule::in(['file', 'url'])],
             'file' => ['required_if:type,file', 'nullable', 'file', 'mimes:xlsx,xls', 'max:20480'],
-            'url' => ['required_if:type,url', 'nullable', 'string', 'url', 'max:2048'],
+            'url' => ['required_if:type,url', 'nullable', 'string', 'url:http,https', 'max:2048'],
         ]);
 
         Source::query()->create([

@@ -2,18 +2,17 @@
 
 ## Requirements
 
-- PHP 8.3+ (CI tests against 8.3, the floor of `composer.json`'s
-  `"php": "^8.2"`... use whatever's on your machine locally, but treat 8.3
-  as the compatibility baseline — avoid 8.4-only syntax)
+- PHP 8.4.1 through 8.4.x. The exact lockfile combines Symfony packages
+  requiring PHP 8.4.1+ with PhpSpreadsheet 1.x, which requires PHP < 8.5.
 - Composer 2
-- Node 20+ and npm
+- Node 22.20+ and npm (compatible with the exact Vite lockfile)
 - MySQL 8+
 
 ## First-time setup
 
 ```bash
 composer install
-npm install
+npm ci
 cp .env.example .env
 php artisan key:generate
 ```
@@ -80,7 +79,7 @@ instead.
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs Pint, PHPStan, and Pest on every push and
-pull request against `main`, using PHP 8.3 (the `composer.json` floor) and
+pull request against `main`, using PHP 8.4 and
 an `.env` copied fresh from `.env.example` — no database service container
 is needed since tests run against in-memory SQLite regardless of the
 `DB_*` values in `.env`.

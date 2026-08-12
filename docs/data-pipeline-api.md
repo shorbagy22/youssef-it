@@ -15,12 +15,13 @@ different, IT-owned AI API wrapper. This one:
   synced to a local path by some other process, e.g. `D:\data\quality\report.xlsx`)
 - Extracts structured data (NRFT, PPM, defects) into MySQL - never sends
   a raw Excel file to the AI
-- Calls Ollama **directly** (`http://10.10.10.15:11434/api/generate`),
+- Calls Ollama **directly** (`{OLLAMA_BASE_URL}/api/generate`),
   with no wrapper API in between
 
 No SharePoint API integration, no Azure, no vector database/embeddings.
-Excel is the only supported format; departments are a fixed set
-(`quality`, `it`, `safety`, `maintenance`).
+Excel is the only supported format. Four initial departments are seeded
+(`quality`, `it`, `safety`, `maintenance`), and authenticated admins can
+add more; the departments table is the source of truth throughout.
 
 ## Data model
 
@@ -28,7 +29,7 @@ Excel is the only supported format; departments are a fixed set
 
 | Column | Purpose |
 |---|---|
-| `department` | one of the four known departments |
+| `department` | an existing department slug |
 | `name` | human-readable label |
 | `type` | `file` (already-synced local path) or `url` (downloaded fresh on every sync) |
 | `file_path` | required when `type = file`, e.g. `D:\data\quality\report.xlsx` |
@@ -98,7 +99,7 @@ POST /api/chat {department, message}
        - wraps as: "You are a factory assistant.\n\nAnswer based ONLY on this
          data:\n\n{context}\n\nQuestion:\n{message}"
   -> OllamaClient::generate(prompt)
-       -> POST {OLLAMA_BASE_URL}/api/generate {model, prompt, stream: false}
+       -> POST {OLLAMA_BASE_URL}/api/generate {model, prompt, stream: false, think: false}
        <- {"response": "..."}
   <- {"answer": "..."}  (or 503 {"error": "..."} if Ollama is unreachable)
 ```
@@ -114,7 +115,7 @@ Remove the middleware in `routes/api.php` if undesired.
 |---|---|
 | `App\Models\Source` | one configured Excel source |
 | `App\Models\DataRecord` | one department-day's structured data |
-| `App\ValueObjects\Department` | backed enum of the four valid department values |
+| `App\Models\Department` | source of truth for valid department slugs |
 | `App\Actions\SyncSourcesAction` | resolves, parses, and upserts one source |
 | `App\Imports\RawRowsImport` | `maatwebsite/excel` import, positional row access, no heading row |
 | `App\Console\Commands\SyncSources` | `sources:sync` - thin, loops sources, isolates per-source failures |
@@ -127,46 +128,22 @@ Remove the middleware in `routes/api.php` if undesired.
 
 | Env var | Default | Purpose |
 |---|---|---|
-| `OLLAMA_BASE_URL` | `http://10.10.10.15:11434` | Ollama server address |
-| `OLLAMA_MODEL` | `qwen2.5:9b` | Model to use for generation |
-| `OLLAMA_TIMEOUT` | `60` | Per-request timeout, in seconds |
+| `OLLAMA_BASE_URL` | `http://127.0.0.1:11434` | Ollama server address |
+| `OLLAMA_MODEL` | `qwen3.5:9b` | Model to use for generation |
+| `OLLAMA_TIMEOUT` | `300` | Total inference timeout, in seconds |
+| `OLLAMA_CONNECT_TIMEOUT` | `10` | Connection timeout, in seconds |
+| `OLLAMA_ATTEMPTS` | `2` | Total attempts for transient failures |
+| `OLLAMA_RETRY_DELAY_MS` | `500` | Delay between attempts |
+| `OLLAMA_THINK` | `false` | Enable the model's hidden reasoning mode |
+| `OLLAMA_PROXY` | unset | Optional proxy; unset makes a direct connection |
 
 ## Example requests
 
-**Register a file-type source:**
-
-```bash
-curl -X POST http://localhost:8000/api/sources \
-  -H "Content-Type: application/json" \
-  -d '{
-    "department": "quality",
-    "name": "Daily Quality Report",
-    "type": "file",
-    "file_path": "D:\\data\\quality\\report.xlsx"
-  }'
-```
-
-Response: `{"message": "Source created"}` (201) - `store()` returns a plain
-confirmation, not the created record.
-
-**Register a url-type source:**
-
-```bash
-curl -X POST http://localhost:8000/api/sources \
-  -H "Content-Type: application/json" \
-  -d '{
-    "department": "it",
-    "name": "IT Metrics",
-    "type": "url",
-    "url": "https://internal.example.com/it-report.xlsx"
-  }'
-```
-
-**List sources:**
-
-```bash
-curl http://localhost:8000/api/sources
-```
+Source management requires an authenticated, verified web session. The
+recommended interface is `/admin/sources`. The JSON source routes are also
+session-authenticated and CSRF-protected; scripted clients must first establish
+a Laravel login session and send its cookie and matching CSRF token. Anonymous
+requests return 401 rather than exposing or modifying source configuration.
 
 **Run a sync manually** (normally handled by the scheduler):
 
@@ -197,14 +174,13 @@ Two unauthenticated Blade pages sit in front of this pipeline, separate
 from the authenticated `/dashboard` and `/chat` (web `/chat` pipeline)
 routes:
 
-- `GET /` (`resources/views/public-dashboard.blade.php`) - four
-  department buttons linking to `/chat/{department}`.
+- `GET /` (`resources/views/public-dashboard.blade.php`) - buttons for
+  every configured department, linking to `/chat/{department}`.
 - `GET /chat/{department}` (`resources/views/chat.blade.php`) - a chat
-  page for that department; 404s for anything not in `App\ValueObjects\Department`.
+  page for that department; 404s for slugs absent from the departments table.
   Plain JS `fetch()` posts to `POST /api/chat` and renders the answer as
-  a chat bubble, with a loading state and an "Error getting response"
-  bubble on failure. No build step, no framework - inline `<script>` in
-  the Blade file.
+  a chat bubble, with a loading state and safe server/validation error
+  details on failure. No framework - the script is inline in the Blade file.
 
 ## Testing
 

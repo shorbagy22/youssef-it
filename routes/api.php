@@ -10,5 +10,7 @@ Route::post('/chat', ChatController::class)
     ->middleware('throttle:20,1')
     ->name('api.chat');
 
-Route::get('/sources', [SourceController::class, 'index'])->name('api.sources.index');
-Route::post('/sources', [SourceController::class, 'store'])->name('api.sources.store');
+Route::middleware(['web', 'auth', 'verified'])->group(function (): void {
+    Route::get('/sources', [SourceController::class, 'index'])->name('api.sources.index');
+    Route::post('/sources', [SourceController::class, 'store'])->name('api.sources.store');
+});

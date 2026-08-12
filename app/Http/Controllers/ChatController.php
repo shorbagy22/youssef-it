@@ -40,9 +40,9 @@ final class ChatController extends Controller
     {
         $validated = $request->validate([
             'message' => ['required', 'string', 'max:4000'],
-            'history' => ['sometimes', 'array'],
+            'history' => ['sometimes', 'array', 'max:20'],
             'history.*.role' => ['required_with:history', 'string', 'in:user,assistant'],
-            'history.*.content' => ['required_with:history', 'string'],
+            'history.*.content' => ['required_with:history', 'string', 'max:4000'],
         ]);
 
         $chatRequest = new ChatRequest(

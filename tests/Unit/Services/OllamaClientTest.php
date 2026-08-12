@@ -18,9 +18,10 @@ test('generate posts the prompt and returns Ollama\'s "response" field', functio
 
     Http::assertSent(function ($request) {
         return $request->url() === 'http://ollama.test/api/generate'
-            && $request['model'] === 'qwen2.5:9b'
+            && $request['model'] === 'qwen3.5:9b'
             && $request['prompt'] === 'a prompt'
-            && $request['stream'] === false;
+            && $request['stream'] === false
+            && $request['think'] === false;
     });
 });
 
@@ -56,5 +57,14 @@ test('generate throws when the response is missing a string "response" field', f
     $client = new OllamaClient;
 
     expect(fn () => $client->generate('a prompt'))
+        ->toThrow(AIServiceUnavailableException::class);
+});
+
+test('generate throws when Ollama returns a blank response', function () {
+    Http::fake([
+        'ollama.test/api/generate' => Http::response(['response' => '   '], 200),
+    ]);
+
+    expect(fn () => (new OllamaClient)->generate('a prompt'))
         ->toThrow(AIServiceUnavailableException::class);
 });
