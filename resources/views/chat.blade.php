@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ ucfirst($department) }} Chat - Factory AI</title>
+    @vite('resources/js/chat-math.js')
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -93,6 +94,15 @@
             color: #991b1b;
         }
 
+        /* A rendered block equation can be wider than the bubble on a
+           narrow screen - scrolls horizontally within its own box
+           instead of overflowing the bubble or wrapping mid-formula. */
+        .bubble .katex-display {
+            overflow-x: auto;
+            overflow-y: hidden;
+            margin: 0.4rem 0;
+        }
+
         form {
             display: flex;
             gap: 0.5rem;
@@ -155,7 +165,18 @@
         function addBubble(text, className) {
             const bubble = document.createElement('div');
             bubble.className = 'bubble ' + className;
-            bubble.textContent = text;
+
+            // Only an 'ai' bubble's text can contain the $$...$$/\(...\)
+            // math delimiters the AI is instructed to use (see
+            // ChatDataService::SYSTEM_PROMPT) - the user's own typed
+            // message is always shown as plain literal text, never
+            // interpreted as LaTeX.
+            if (className === 'ai' && window.renderChatMessage) {
+                window.renderChatMessage(bubble, text);
+            } else {
+                bubble.textContent = text;
+            }
+
             messagesEl.appendChild(bubble);
             messagesEl.scrollTop = messagesEl.scrollHeight;
             return bubble;

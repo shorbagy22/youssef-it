@@ -33,7 +33,12 @@
                                 <tr>
                                     <td>{{ $source->name }}</td>
                                     <td>{{ $source->department->name }}</td>
-                                    <td class="text-capitalize">{{ $source->type }}</td>
+                                    <td class="text-capitalize">
+                                        {{ $source->type }}
+                                        @if ($source->ocr)
+                                            <span class="badge bg-secondary">{{ __('OCR') }}</span>
+                                        @endif
+                                    </td>
                                     <td>{{ $source->created_at?->format('Y-m-d H:i') }}</td>
                                 </tr>
                             @endforeach

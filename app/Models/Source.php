@@ -22,7 +22,9 @@ use Illuminate\Support\Carbon;
  * @property string $type
  * @property string|null $file_path
  * @property string|null $url
+ * @property bool $ocr
  * @property Carbon|null $last_synced_at
+ * @property string|null $last_sync_error
  * @property-read Department $department
  */
 class Source extends Model
@@ -39,7 +41,9 @@ class Source extends Model
         'type',
         'file_path',
         'url',
+        'ocr',
         'last_synced_at',
+        'last_sync_error',
     ];
 
     /**
@@ -48,6 +52,7 @@ class Source extends Model
     protected function casts(): array
     {
         return [
+            'ocr' => 'boolean',
             'last_synced_at' => 'datetime',
         ];
     }

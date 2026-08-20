@@ -49,6 +49,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/sources', [AdminSourceController::class, 'index'])->name('sources.index');
     Route::get('/sources/create', [AdminSourceController::class, 'create'])->name('sources.create');
     Route::post('/sources', [AdminSourceController::class, 'store'])->name('sources.store');
+    Route::post('/sources/sync', [AdminSourceController::class, 'sync'])->name('sources.sync');
+    Route::get('/sources/{source}/edit', [AdminSourceController::class, 'edit'])->name('sources.edit');
+    Route::put('/sources/{source}', [AdminSourceController::class, 'update'])->name('sources.update');
+    Route::delete('/sources/{source}', [AdminSourceController::class, 'destroy'])->name('sources.destroy');
 
     Route::get('/departments', [AdminDepartmentController::class, 'index'])->name('departments.index');
     Route::get('/departments/create', [AdminDepartmentController::class, 'create'])->name('departments.create');

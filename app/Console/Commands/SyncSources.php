@@ -48,7 +48,9 @@ final class SyncSources extends Command
 
         foreach ($sources as $source) {
             try {
-                $count = $this->action->sync($source);
+                $count = $this->action->sync($source, function (int $rowsSoFar) use ($source): void {
+                    $this->line("  [{$source->department->slug}] {$source->name}: {$rowsSoFar} row(s) so far...");
+                });
                 $this->info("  [{$source->department->slug}] {$source->name}: {$count} record(s) synced.");
             } catch (Throwable $e) {
                 $failed++;

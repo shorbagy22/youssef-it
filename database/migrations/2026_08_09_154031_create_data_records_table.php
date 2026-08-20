@@ -12,17 +12,20 @@ return new class extends Migration
     {
         Schema::create('data_records', function (Blueprint $table) {
             $table->id();
+            // Not unique anymore: many rows per source now (one per Excel
+            // row), not one JSON blob per source.
+            $table->foreignId('source_id')->constrained()->cascadeOnDelete();
             $table->string('department');
-            $table->date('date');
-            $table->decimal('nrft', 8, 2)->nullable();
-            $table->decimal('ppm', 10, 2)->nullable();
-            $table->json('defects')->nullable();
-            $table->json('extra_data')->nullable();
+            $table->unsignedInteger('sheet_index');
+            $table->string('sheet_name');
+            $table->unsignedInteger('row_index');
+            $table->json('data');
             $table->timestamps();
 
-            // One record per department per day - the natural grain of one
-            // Excel row - and the match key SyncSourcesAction upserts on.
-            $table->unique(['department', 'date']);
+            // Ordered retrieval/replacement per source, and per-department
+            // filtering for /api/chat.
+            $table->index(['source_id', 'sheet_index', 'row_index']);
+            $table->index('department');
         });
     }
 

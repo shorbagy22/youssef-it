@@ -39,9 +39,20 @@
                     </div>
 
                     <div class="mb-3" id="file-field" style="display: none;">
-                        <x-input-label for="file" :value="__('Excel File')" />
-                        <input id="file" name="file" type="file" class="form-control mt-1" accept=".xlsx,.xls">
+                        <x-input-label for="file" :value="__('File (Excel, CSV, or PDF)')" />
+                        <input id="file" name="file" type="file" class="form-control mt-1" accept=".xlsx,.xls,.xlsm,.ods,.csv,.pdf">
                         <x-input-error :messages="$errors->get('file')" class="mt-1" />
+
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="ocr" name="ocr" value="1" @checked(old('ocr'))>
+                            <label class="form-check-label" for="ocr">
+                                {{ __('Use OCR for this PDF') }}
+                            </label>
+                            <div class="form-text">
+                                {{ __('Only for a PDF whose text comes out garbled/glued together after syncing. Slower, but reads the page visually instead of relying on the PDF\'s own (sometimes broken) text layer.') }}
+                            </div>
+                        </div>
+                        <x-input-error :messages="$errors->get('ocr')" class="mt-1" />
                     </div>
 
                     <div class="mb-3" id="url-field" style="display: none;">

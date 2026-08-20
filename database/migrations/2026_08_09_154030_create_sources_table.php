@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('file_path')->nullable();
             $table->string('url')->nullable();
             $table->timestamp('last_synced_at')->nullable();
+            $table->text('last_sync_error')->nullable();
             $table->timestamps();
         });
     }
